@@ -27,25 +27,10 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Generate signing keys
-        run: |
-          npm run tauri signer generate -- -w $env:USERPROFILE\.tauri\signing-key.key
-          $privateKey = Get-Content $env:USERPROFILE\.tauri\signing-key.key -Raw
-          $publicKey = Get-Content "$env:USERPROFILE\.tauri\signing-key.key.pub" -Raw
-          echo "TAURI_SIGNING_PRIVATE_KEY=$privateKey" >> $env:GITHUB_ENV
-          
-          # Update pubkey in tauri.conf.json
-          $configPath = "src-tauri/tauri.conf.json"
-          $config = Get-Content $configPath -Raw
-          $config = $config -replace '"pubkey":\s*"[^"]*"', "`"pubkey`": `"$publicKey`""
-          Set-Content $configPath -Value $config -NoNewline
-
       - name: Build the app
         run: npm run tauri build
         env:
           CI: false
-          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
