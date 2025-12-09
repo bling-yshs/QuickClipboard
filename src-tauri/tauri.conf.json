@@ -90,5 +90,13 @@
       }
     },
     "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://api.quickclipboard.cn/update/latest.json",
+        "https://github.com/mosheng1/QuickClipboard/releases/latest/download/latest.json"
+      ]
+    }
   }
 }
