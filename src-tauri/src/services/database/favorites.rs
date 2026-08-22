@@ -383,9 +383,9 @@ pub fn query_favorites(params: FavoritesQueryParams) -> Result<PaginatedResult<F
         }
 
         if let Some(ref search_query) = search_keyword {
-            if !search_query.is_empty() {
+            for keyword in search_query.split_whitespace() {
                 where_clauses.push("(title LIKE ? OR content LIKE ? OR html_content LIKE ?)");
-                let search_pattern = format!("%{}%", search_query);
+                let search_pattern = format!("%{}%", keyword);
                 count_params.push(Box::new(search_pattern.clone()));
                 count_params.push(Box::new(search_pattern.clone()));
                 count_params.push(Box::new(search_pattern.clone()));

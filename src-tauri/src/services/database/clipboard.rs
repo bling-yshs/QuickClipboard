@@ -195,10 +195,9 @@ pub fn query_clipboard_items(params: QueryParams) -> Result<PaginatedResult<Clip
         let mut query_params: Vec<Box<dyn rusqlite::ToSql>> = vec![];
         
         if let Some(ref search) = search_keyword {
-            if !search.trim().is_empty() {
+            for keyword in search.split_whitespace() {
                 where_clauses.push("content LIKE ?");
-                let search_pattern = format!("%{}%", search);
-                query_params.push(Box::new(search_pattern));
+                query_params.push(Box::new(format!("%{}%", keyword)));
             }
         }
         
