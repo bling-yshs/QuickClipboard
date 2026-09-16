@@ -12,6 +12,8 @@ import { settingsStore } from '@shared/store/settingsStore';
 import { getClipboardHistory, moveClipboardItemToTop, moveClipboardItemById, closePreviewWindow } from '@shared/api';
 import { getOneTimePasteEnabled } from '@shared/services/oneTimePaste';
 import ClipboardItem from './ClipboardItem';
+import { useExternalDragSwitch } from '@shared/hooks/useExternalDragSwitch';
+import ExternalDragSafeZones from '@shared/components/ExternalDragSafeZones';
 
 const SCROLL_DEBOUNCE_DELAY = 50;
 const LIST_PRELOAD_PADDING = 20;
@@ -39,6 +41,7 @@ const ClipboardList = forwardRef(({
   const showShortcut = settings.showListShortcuts !== false && !clipSnap.filter && clipSnap.contentType === 'all';
   const showIndex = settings.showListIndex !== false;
   const selectedIdSet = useMemo(() => new Set(clipSnap.selectedEntries.map(entry => entry.id)), [clipSnap.selectedEntries]);
+  const selectedOrderMap = useMemo(() => new Map(clipSnap.selectedEntries.map((entry, order) => [entry.id, order + 1])), [clipSnap.selectedEntries]);
   const itemsArray = useMemo(() => {
     return Array.from({
       length: clipSnap.totalCount
@@ -101,7 +104,22 @@ const ClipboardList = forwardRef(({
     collisionDetection
   } = useSortableList({
     items: itemsWithId,
-    onDragEnd: handleDragEnd
+    onDragEnd: handleDragEnd,
+    restrictToVertical: false,
+  });
+
+  const {
+    showSafeZones,
+    prepareExternalDrag,
+    shouldCancelDndDrop,
+    handleDndDragStart,
+    handleDndDragEnd,
+    handleDndDragCancel,
+  } = useExternalDragSwitch({
+    onDragStart: handleDragStart,
+    onDragEnd: onDragEnd,
+    onDragCancel: handleDragCancel,
+    closePreview: () => closePreviewWindow().catch(() => { }),
   });
 
   const activeIndex = activeItem ? itemsWithId.findIndex(item => item._sortId === activeId || item.id === activeId) : -1;
@@ -187,7 +205,7 @@ const ClipboardList = forwardRef(({
     }
     navigationStore.resetNavigation();
     onScrollStateChangeRef.current?.({ atTop: true });
-  }, [clipSnap.filter, clipSnap.contentType, scrollerElement]);
+  }, [clipSnap.filter, clipSnap.contentType, clipSnap.pasteStatus, scrollerElement]);
 
   const loadMissingRange = useCallback(async (startIndex, endIndex) => {
     if (clipSnap.loading || clipSnap.totalCount <= 0) {
@@ -307,7 +325,11 @@ const ClipboardList = forwardRef(({
         return false;
       }
 
-      clipboardStore.enterMultiSelectMode();
+      clipboardStore.enterMultiSelectMode({
+        id: item.id,
+        index,
+        contentType: item.content_type,
+      });
 
       if (isShiftPressed) {
         const anchorIndex = typeof currentSelectedIndex === 'number' && currentSelectedIndex >= 0
@@ -320,16 +342,11 @@ const ClipboardList = forwardRef(({
         const requestId = ++selectionRequestRef.current;
         const entries = await loadSelectionEntries(startIndex, endIndex);
         if (requestId === selectionRequestRef.current) {
-          clipboardStore.selectRange(entries);
+          clipboardStore.selectRange(anchorIndex > index ? entries.reverse() : entries);
         }
         return true;
       }
 
-      clipboardStore.toggleSelectedEntry({
-        id: item.id,
-        index,
-        contentType: item.content_type,
-      });
       clipboardStore.setSelectionAnchorIndex(index);
       return true;
     }
@@ -341,7 +358,7 @@ const ClipboardList = forwardRef(({
       const requestId = ++selectionRequestRef.current;
       const entries = await loadSelectionEntries(startIndex, endIndex);
       if (requestId === selectionRequestRef.current) {
-        clipboardStore.selectRange(entries);
+        clipboardStore.selectRange(selectionAnchorIndex > index ? entries.reverse() : entries);
       }
       return true;
     }
@@ -354,6 +371,8 @@ const ClipboardList = forwardRef(({
       contentType: item.content_type,
     };
     if (isCtrlLikePressed) {
+      clipboardStore.toggleSelectedEntry(entry);
+    } else if (clipboardStore.selectedEntries.length === 1 && clipboardStore.hasSelectedId(entry.id)) {
       clipboardStore.toggleSelectedEntry(entry);
     } else {
       // 多选模式下普通单击改为单选当前项，符合常见文件管理器行为。
@@ -466,7 +485,8 @@ const ClipboardList = forwardRef(({
     marginBottom: `${cardSpacingPx}px`
   } : undefined;
 
-  return <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={handleDragStart} onDragEnd={onDragEnd} onDragCancel={handleDragCancel} modifiers={modifiers}>
+  return <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={handleDndDragStart} onDragEnd={handleDndDragEnd} onDragCancel={handleDndDragCancel} cancelDrop={shouldCancelDndDrop} modifiers={[]}>
+    <ExternalDragSafeZones visible={showSafeZones} />
     <div className="flex-1 bg-qc-surface overflow-hidden custom-scrollbar-container transition-colors duration-500 clipboard-list" data-no-drag>
       <SortableContext items={itemsWithId.map(item => item._sortId)} strategy={strategy}>
         <Virtuoso ref={virtuosoRef} totalCount={clipSnap.totalCount || 0} scrollerRef={scrollerRefCallback} atTopStateChange={atTop => {
@@ -508,6 +528,7 @@ const ClipboardList = forwardRef(({
                 sortId={entry._sortId}
                 isSelected={!isMultiSelectMode && currentSelectedIndex === index}
                 isMultiSelected={selectedIdSet.has(item.id)}
+                selectionNumber={selectedOrderMap.get(item.id)}
                 isMultiSelectMode={isMultiSelectMode}
                 onHover={() => handleItemHover(index)}
                 onClick={handleItemClick}
@@ -517,6 +538,7 @@ const ClipboardList = forwardRef(({
                 showIndex={showIndex}
                 animationDelay={animationDelay}
                 leftClickAction={settings.leftClickAction}
+                onPrepareExternalDrag={prepareExternalDrag}
               />
             </div>
           </div> : <div className={heightClass}>
@@ -525,7 +547,8 @@ const ClipboardList = forwardRef(({
               index={index}
               sortId={entry._sortId}
               isSelected={!isMultiSelectMode && currentSelectedIndex === index}
-              isMultiSelected={selectedIdSet.has(item.id)}
+                isMultiSelected={selectedIdSet.has(item.id)}
+                selectionNumber={selectedOrderMap.get(item.id)}
               isMultiSelectMode={isMultiSelectMode}
               onHover={() => handleItemHover(index)}
               onClick={handleItemClick}
@@ -535,6 +558,7 @@ const ClipboardList = forwardRef(({
               showIndex={showIndex}
               animationDelay={animationDelay}
               leftClickAction={settings.leftClickAction}
+              onPrepareExternalDrag={prepareExternalDrag}
             />
           </div>;
         }} isScrolling={handleVirtuosoScrollState} style={{
@@ -543,17 +567,17 @@ const ClipboardList = forwardRef(({
       </SortableContext>
     </div>
 
-    <DragOverlay dropAnimation={null}>
+    <DragOverlay dropAnimation={null} modifiers={[]} zIndex={1200}>
       {activeItem && activeIndex !== -1 && (() => {
         const overlayClass = settings.rowHeight === 'auto' ? 'h-auto' : heightClass;
         return (
-          <div className={`${overlayClass} rounded-md border border-qc-border shadow-lg bg-qc-panel/70 backdrop-blur-md`}>
+          <div className={`${overlayClass} relative z-[1200] rounded-md border border-qc-border shadow-lg bg-qc-panel/70 backdrop-blur-md`}>
             <ClipboardItem
               item={activeItem.item}
               index={activeIndex}
               sortId={activeItem._sortId}
               isDragActive={!isMultiSelectMode}
-              isDraggable={!isMultiSelectMode}
+              isDraggable={false}
               showShortcut={showShortcut}
               showIndex={showIndex}
               leftClickAction={settings.leftClickAction}
