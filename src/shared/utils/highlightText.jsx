@@ -2,15 +2,14 @@
 export function highlightText(text, keyword) {
   if (!keyword || !text) return text;
 
-  // 转义正则特殊字符
-  const escapedKeyword = escapeRegExp(keyword);
-  const regex = new RegExp(`(${escapedKeyword})`, 'gi');
-  const parts = text.split(regex);
+  const { regex, keywordSet } = createKeywordMatcher(keyword);
+  if (!regex) return text;
 
+  const parts = text.split(regex);
   if (parts.length === 1) return text;
 
   return parts.map((part, index) => {
-    if (part.toLowerCase() === keyword.toLowerCase()) {
+    if (keywordSet.has(part.toLowerCase())) {
       return (
         <mark
           key={index}
@@ -30,14 +29,31 @@ function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, (match) => '\\' + match);
 }
 
+function createKeywordMatcher(keyword) {
+  const keywords = keyword.trim().split(/\s+/).filter(Boolean);
+  if (keywords.length === 0) {
+    return { regex: null, keywordSet: new Set() };
+  }
+
+  const uniqueKeywords = [...new Set(keywords.map((item) => item.toLowerCase()))];
+  const escapedKeywords = [...uniqueKeywords]
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegExp);
+
+  return {
+    regex: new RegExp(`(${escapedKeywords.join('|')})`, 'gi'),
+    keywordSet: new Set(uniqueKeywords)
+  };
+}
+
 // 高亮 HTML 内容中的关键词
 export function highlightHtmlContent(container, keyword) {
   if (!container || !keyword) return;
 
   clearHighlights(container);
 
-  const escapedKeyword = escapeRegExp(keyword);
-  const regex = new RegExp(`(${escapedKeyword})`, 'gi');
+  const { regex, keywordSet } = createKeywordMatcher(keyword);
+  if (!regex) return;
 
   const walker = document.createTreeWalker(
     container,
@@ -61,7 +77,7 @@ export function highlightHtmlContent(container, keyword) {
     if (parts.length > 1) {
       const fragment = document.createDocumentFragment();
       parts.forEach((part) => {
-        if (part.toLowerCase() === keyword.toLowerCase()) {
+        if (keywordSet.has(part.toLowerCase())) {
           const mark = document.createElement('mark');
           mark.className =
             'search-highlight bg-[var(--qc-search-highlight-bg)] text-[var(--qc-search-highlight-fg)] rounded-sm px-0.5';
