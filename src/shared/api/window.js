@@ -25,9 +25,13 @@ export async function saveCurrentFocus() {
   return await invoke('save_current_focus')
 }
 
-// 恢复上次焦点窗口
-export async function restoreLastFocus() {
-  return await invoke('restore_last_focus')
+/**
+ * 恢复执行条目快捷键，并按需激活上次使用的外部窗口。
+ * @param {boolean} activateTarget 是否激活外部窗口，粘贴操作默认激活。
+ * @returns {Promise<void>} 后端完成焦点处理时兑现。
+ */
+export async function restoreLastFocus(activateTarget = true) {
+  return await invoke('restore_last_focus', { activateTarget })
 }
 
 // 开始自定义拖拽
@@ -49,4 +53,3 @@ export async function hideMainWindowIfAutoShown() {
 export async function reloadAllWindows() {
   return await invoke('reload_all_windows')
 }
-

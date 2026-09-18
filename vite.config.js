@@ -25,7 +25,7 @@ export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_'],
 
   resolve: {
-    preserveSymlinks: true,
+    preserveSymlinks: false,
     alias: {
       '@': resolve(__dirname, 'src'),
       '@shared': resolve(__dirname, 'src/shared'),

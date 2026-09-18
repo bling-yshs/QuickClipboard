@@ -9,7 +9,15 @@ const FOCUS_DEBOUNCE_DELAY = 50
 
 // 重置状态
 if (typeof window !== 'undefined') {
+  /**
+   * 清理当前窗口失焦前安排的焦点任务。
+   * @returns {void}
+   */
   window.addEventListener('blur', () => {
+    clearTimeout(focusDebounceTimer)
+    clearTimeout(blurDebounceTimer)
+    focusDebounceTimer = null
+    blurDebounceTimer = null
     currentFocusState = 'normal'
   })
 }
@@ -40,7 +48,10 @@ async function debouncedEnableFocus() {
   }, FOCUS_DEBOUNCE_DELAY)
 }
 
-// 防抖的焦点恢复函数
+/**
+ * 在输入结束后恢复执行条目快捷键，保持窗口内点击的焦点连续性。
+ * @returns {Promise<void>} 完成延迟任务的安排。
+ */
 async function debouncedRestoreFocus() {
   if (focusDebounceTimer) {
     clearTimeout(focusDebounceTimer)
@@ -56,7 +67,12 @@ async function debouncedRestoreFocus() {
     clearTimeout(blurDebounceTimer)
   }
   
+  /**
+   * 在输入框均已失焦时结束输入模式。
+   * @returns {Promise<void>} 快捷键恢复完成时兑现。
+   */
   blurDebounceTimer = setTimeout(async () => {
+    blurDebounceTimer = null
     const activeElement = document.activeElement
     const isInputFocused = activeElement && (
       activeElement.tagName === 'INPUT' || 
@@ -70,7 +86,7 @@ async function debouncedRestoreFocus() {
     }
     
     try {
-      await restoreLastFocus()
+      await restoreLastFocus(false)
       currentFocusState = 'normal'
     } catch (error) {
       console.error('恢复工具窗口模式失败:', error)
@@ -132,13 +148,19 @@ export async function focusWindowImmediately() {
   }
 }
 
-// 恢复工具窗口模式
+/**
+ * 结束输入模式并保持当前窗口的前台焦点。
+ * @returns {Promise<void>} 快捷键恢复完成时兑现。
+ */
 export async function restoreFocus() {
+  clearTimeout(focusDebounceTimer)
+  clearTimeout(blurDebounceTimer)
+  focusDebounceTimer = null
+  blurDebounceTimer = null
   try {
-    await restoreLastFocus()
+    await restoreLastFocus(false)
     currentFocusState = 'normal'
   } catch (error) {
     console.error('恢复焦点失败:', error)
   }
 }
-

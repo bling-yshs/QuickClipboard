@@ -149,9 +149,21 @@ pub fn save_current_focus(app: AppHandle) -> Result<(), String> {
     crate::services::system::save_current_focus(app)
 }
 
+/// 结束输入框焦点模式，并按需激活上次使用的外部窗口。
+///
+/// # Arguments
+/// * `activate_target` - 是否激活外部窗口；省略时保留粘贴操作的默认行为。
+///
+/// # Returns
+/// 返回焦点恢复结果，或仅恢复执行条目快捷键后的成功结果。
 #[tauri::command]
-pub fn restore_last_focus() -> Result<(), String> {
-    crate::services::system::restore_last_focus()
+pub fn restore_last_focus(activate_target: Option<bool>) -> Result<(), String> {
+    if activate_target.unwrap_or(true) {
+        crate::services::system::restore_last_focus()
+    } else {
+        crate::hotkey::resume_execute_item_hotkey();
+        Ok(())
+    }
 }
 
 #[tauri::command]
