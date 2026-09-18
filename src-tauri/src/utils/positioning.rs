@@ -15,26 +15,68 @@ pub fn position_at_cursor(window: &WebviewWindow) -> Result<(), String> {
     window.set_position(best_pos).map_err(|e| e.to_string())
 }
 
-// 将记住的位置恢复到可见屏幕范围内，无法判断时回退到智能鼠标定位
+// 将记住的位置映射到鼠标所在屏幕，无法判断来源屏幕时回退到智能鼠标定位
 pub fn position_at_saved_or_cursor(window: &WebviewWindow, x: i32, y: i32) -> Result<(), String> {
+    let app = window.app_handle();
+    let target_monitor = crate::screen::ScreenUtils::get_monitor_at_cursor(app)?;
+    let monitors = app
+        .available_monitors()
+        .map_err(|e| format!("获取显示器列表失败: {}", e))?;
+
+    let source_monitor = match monitors.into_iter().find(|monitor| {
+        let position = monitor.position();
+        let size = monitor.size();
+        x >= position.x
+            && x < position.x + size.width as i32
+            && y >= position.y
+            && y < position.y + size.height as i32
+    }) {
+        Some(monitor) => monitor,
+        None => return position_at_cursor(window),
+    };
+
     let window_size = match window.outer_size() {
         Ok(size) => size,
         Err(_) => return position_at_cursor(window),
     };
-    let width = window_size.width.min(i32::MAX as u32) as i32;
-    let height = window_size.height.min(i32::MAX as u32) as i32;
+    let window_scale = window.scale_factor().unwrap_or(1.0).max(f64::EPSILON);
+    let source_scale = source_monitor.scale_factor().max(f64::EPSILON);
+    let target_scale = target_monitor.scale_factor().max(f64::EPSILON);
+    let source_area = source_monitor.work_area();
+    let target_area = target_monitor.work_area();
 
-    match crate::screen::ScreenUtils::resolve_visible_window_position(
-        window.app_handle(),
-        x,
-        y,
-        width,
-        height,
-    ) {
-        Ok((visible_x, visible_y)) => window
-            .set_position(PhysicalPosition::new(visible_x, visible_y))
-            .map_err(|e| e.to_string()),
-        Err(_) => position_at_cursor(window),
+    let offset_x = (x - source_area.position.x) as f64 / source_scale;
+    let offset_y = (y - source_area.position.y) as f64 / source_scale;
+    let target_width = ((window_size.width as f64 / window_scale) * target_scale).round() as i32;
+    let target_height = ((window_size.height as f64 / window_scale) * target_scale).round() as i32;
+
+    let mapped_x = target_area.position.x + (offset_x * target_scale).round() as i32;
+    let mapped_y = target_area.position.y + (offset_y * target_scale).round() as i32;
+    let target_x = clamp_axis_to_area(
+        mapped_x,
+        target_width,
+        target_area.position.x,
+        target_area.size.width as i32,
+    );
+    let target_y = clamp_axis_to_area(
+        mapped_y,
+        target_height,
+        target_area.position.y,
+        target_area.size.height as i32,
+    );
+
+    window
+        .set_position(PhysicalPosition::new(target_x, target_y))
+        .map_err(|e| e.to_string())
+}
+
+fn clamp_axis_to_area(position: i32, size: i32, area_position: i32, area_size: i32) -> i32 {
+    if area_size <= 0 || size >= area_size {
+        area_position
+    } else {
+        position
+            .max(area_position)
+            .min(area_position + area_size - size)
     }
 }
 
