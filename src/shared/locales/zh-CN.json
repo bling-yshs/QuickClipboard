@@ -754,6 +754,8 @@
       "leftClickActionSingleCopy": "单击复制",
       "leftClickActionDoublePaste": "双击粘贴",
       "leftClickActionDoubleCopy": "双击复制",
+      "closeWindowAfterAction": "操作后关闭窗口",
+      "closeWindowAfterActionDesc": "执行当前设置的单击或双击复制/粘贴操作后关闭主窗口",
       "modifierClickMultiSelect": "修饰键点击进入多选",
       "modifierClickMultiSelectDesc": "关闭后，按住 Ctrl 或 Shift 点击列表项时不会自动进入多选模式",
       "pasteShortcutShiftInsert": "Shift+Insert",

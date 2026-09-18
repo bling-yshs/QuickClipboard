@@ -9,7 +9,7 @@ import { showClipboardItemContextMenu } from '@shared/utils/contextMenu';
 import { getExternalDragInfo } from '@shared/utils/externalDragInfo';
 import { getPrimaryType } from '@shared/utils/contentType';
 import { useTranslation } from 'react-i18next';
-import { addClipboardToFavorites, copyClipboardItem, deleteFavorite, togglePinClipboardItem, showPreviewWindow, closePreviewWindow } from '@shared/api';
+import { addClipboardToFavorites, copyClipboardItem, deleteFavorite, togglePinClipboardItem, showPreviewWindow, closePreviewWindow, hideMainWindow } from '@shared/api';
 import { favoritesStore } from '@shared/store/favoritesStore';
 import { openEditorForClipboard } from '@shared/api/textEditor';
 import { toast, TOAST_SIZES, TOAST_POSITIONS } from '@shared/store/toastStore';
@@ -253,7 +253,7 @@ function ClipboardItem({
 
   const executePaste = useCallback(async () => {
     try {
-      await pasteClipboardItem(item.id);
+      await pasteClipboardItem(item.id, settings.closeWindowAfterAction !== false);
       // 粘贴后置顶
       if (!getOneTimePasteEnabled() && settingsStore.pasteToTop && item.id && !item.is_pinned) {
         try {
@@ -269,11 +269,14 @@ function ClipboardItem({
         position: TOAST_POSITIONS.BOTTOM_RIGHT
       });
     }
-  }, [item.id, item.is_pinned, t]);
+  }, [item.id, item.is_pinned, settings.closeWindowAfterAction, t]);
 
   const executeCopy = useCallback(async () => {
     try {
       await copyClipboardItem(item.id);
+      if (settings.closeWindowAfterAction !== false && !settings.windowPinned) {
+        hideMainWindow().catch(error => console.warn('复制后关闭窗口失败:', error));
+      }
       toast.success(t('common.copied'), {
         size: TOAST_SIZES.EXTRA_SMALL,
         position: TOAST_POSITIONS.BOTTOM_RIGHT
@@ -285,7 +288,7 @@ function ClipboardItem({
         position: TOAST_POSITIONS.BOTTOM_RIGHT
       });
     }
-  }, [item.id, t]);
+  }, [item.id, settings.closeWindowAfterAction, settings.windowPinned, t]);
 
   const executeLeftClickAction = useCallback(async (action) => {
     if (action === 'single_paste' || action === 'double_paste') {

@@ -138,6 +138,7 @@ pub struct AppSettings {
     pub paste_with_format: bool,
     pub paste_shortcut_mode: String,
     pub left_click_action: String,
+    pub close_window_after_action: bool,
     pub modifier_click_multi_select: bool,
     
     pub paste_to_top: bool,
@@ -311,6 +312,7 @@ impl Default for AppSettings {
             paste_with_format: true,
             paste_shortcut_mode: "ctrl_v".to_string(),
             left_click_action: "single_paste".to_string(),
+            close_window_after_action: true,
             modifier_click_multi_select: true,
             paste_to_top: false,
             show_list_shortcuts: true,

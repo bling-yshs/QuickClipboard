@@ -754,6 +754,8 @@
       "leftClickActionSingleCopy": "Single Click to Copy",
       "leftClickActionDoublePaste": "Double Click to Paste",
       "leftClickActionDoubleCopy": "Double Click to Copy",
+      "closeWindowAfterAction": "Close Window After Action",
+      "closeWindowAfterActionDesc": "Close the main window after the configured single- or double-click copy/paste action",
       "modifierClickMultiSelect": "Modifier Click Multi-Select",
       "modifierClickMultiSelectDesc": "When disabled, Ctrl-click or Shift-click on list items will not enter multi-select mode automatically",
       "pasteShortcutShiftInsert": "Shift+Insert",

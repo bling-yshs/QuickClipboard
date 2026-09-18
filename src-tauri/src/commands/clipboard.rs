@@ -152,6 +152,8 @@ pub struct PasteParams {
     pub favorite_id: Option<String>,
     #[serde(default)]
     pub action: Option<String>,
+    #[serde(default)]
+    pub close_window: Option<bool>,
 }
 
 // 粘贴剪贴板项或收藏项
@@ -171,8 +173,8 @@ pub async fn paste_content(params: PasteParams, app: tauri::AppHandle) -> Result
         _ => None,
     };
 
-    // 先隐藏窗口，让用户感知粘贴是即时的
-    if !crate::get_window_state().is_pinned {
+    // 默认保持原有行为；左键操作可显式控制执行后是否关闭窗口。
+    if params.close_window.unwrap_or(true) && !crate::get_window_state().is_pinned {
         if let Some(window) = crate::get_main_window(&app) {
             crate::hide_main_window(&window);
         }

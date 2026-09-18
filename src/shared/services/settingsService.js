@@ -95,6 +95,7 @@ export const defaultSettings = {
   pasteWithFormat: true,
   pasteShortcutMode: 'ctrl_v',
   leftClickAction: 'single_paste',
+  closeWindowAfterAction: true,
   modifierClickMultiSelect: true,
   pasteToTop: false,
   showListShortcuts: true,

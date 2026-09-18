@@ -95,6 +95,10 @@ function ClipboardSection({
           <Select value={settings.leftClickAction || 'single_paste'} onChange={value => onSettingChange('leftClickAction', value)} options={leftClickActionOptions} className="w-48" />
         </SettingItem>
 
+        <SettingItem label={t('settings.clipboard.closeWindowAfterAction')} description={t('settings.clipboard.closeWindowAfterActionDesc')}>
+          <Toggle checked={settings.closeWindowAfterAction !== false} onChange={checked => onSettingChange('closeWindowAfterAction', checked)} />
+        </SettingItem>
+
         <SettingItem label={t('settings.clipboard.saveImages')} description={t('settings.clipboard.saveImagesDesc')}>
           <Toggle checked={settings.saveImages} onChange={checked => onSettingChange('saveImages', checked)} />
         </SettingItem>

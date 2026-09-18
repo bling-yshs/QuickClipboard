@@ -624,9 +624,9 @@ export async function clearClipboardHistory() {
 }
 
 // 粘贴剪贴板项
-export async function pasteClipboardItem(id) {
+export async function pasteClipboardItem(id, closeWindow = true) {
   try {
-    await apiPasteClipboardItem(id)
+    await apiPasteClipboardItem(id, null, closeWindow)
     return true
   } catch (err) {
     console.error('粘贴剪贴板项失败:', err)
