@@ -105,12 +105,12 @@ keyring = { version = "3.6.3", features = ["sync-secret-service", "crypto-rust"]
 default = []
 custom-protocol = ["tauri/custom-protocol"]
 
+[profile.dev]
+incremental = true # Compile your binary in smaller steps.
+
 [profile.release]
-lto = "fat"
-opt-level = 3
-codegen-units = 1
-panic = "abort"
-strip = "debuginfo"
-debug = false
-incremental = false
-overflow-checks = false
+codegen-units = 1 # Allows LLVM to perform better optimization.
+lto = true # Enables link-time-optimizations.
+opt-level = 3 # Prioritizes small binary size. Use `3` if you prefer speed.
+panic = "abort" # Higher performance by disabling panic handlers.
+strip = true # Ensures debug symbols are removed.
