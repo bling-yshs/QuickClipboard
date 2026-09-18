@@ -118,6 +118,7 @@ pub struct AppSettings {
     pub remember_window_size: bool,
     pub saved_window_position: Option<(i32, i32)>,
     pub saved_window_size: Option<(u32, u32)>,
+    pub window_pinned: bool,
 
     // 贴边隐藏设置
     pub edge_hide_enabled: bool,
@@ -294,6 +295,7 @@ impl Default for AppSettings {
             remember_window_size: true,
             saved_window_position: None,
             saved_window_size: None,
+            window_pinned: false,
 
             edge_hide_enabled: true,
             edge_snap_position: None,

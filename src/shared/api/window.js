@@ -1,5 +1,10 @@
 import { invoke } from '@tauri-apps/api/core'
 
+// 获取持久化窗口置顶状态
+export async function getWindowPinned() {
+  return await invoke('get_window_pinned')
+}
+
 // 设置窗口置顶状态
 export async function setWindowPinned(pinned) {
   return await invoke('set_window_pinned', { pinned })

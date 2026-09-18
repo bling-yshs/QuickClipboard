@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSnapshot } from 'valtio';
 import { listen } from '@tauri-apps/api/event';
-import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { settingsStore } from '@shared/store/settingsStore';
 import { groupsStore } from '@shared/store/groupsStore';
@@ -251,52 +250,6 @@ function App() {
     return () => cleanup.then(fn => fn());
   }, [activeTab, t]);
 
-  useEffect(() => {
-    let refreshingTopmost = false;
-    let lastRefreshAt = 0;
-
-    const refreshMainWindowTopmost = async () => {
-      const now = Date.now();
-      if (refreshingTopmost || now - lastRefreshAt < 200) {
-        return;
-      }
-
-      refreshingTopmost = true;
-      lastRefreshAt = now;
-
-      try {
-        await invoke('raise_main_window_topmost');
-      } catch (err) {
-        console.warn('刷新主窗口置顶失败:', err);
-      } finally {
-        refreshingTopmost = false;
-      }
-    };
-
-    const handleMouseEnter = async () => {
-      await refreshMainWindowTopmost();
-
-      try {
-        const { saveCurrentFocus } = await import('@shared/api/window');
-        await saveCurrentFocus();
-      } catch (err) {
-        console.warn('鼠标进入时保存焦点失败:', err);
-      }
-    };
-
-    const handlePointerDown = () => {
-      refreshMainWindowTopmost();
-    };
-
-    const root = document.documentElement;
-    root.addEventListener('pointerenter', handleMouseEnter);
-    document.addEventListener('pointerdown', handlePointerDown, true);
-
-    return () => {
-      root.removeEventListener('pointerenter', handleMouseEnter);
-      document.removeEventListener('pointerdown', handlePointerDown, true);
-    };
-  }, []);
   useEffect(() => {
     let resizeTimer = null;
     let moveTimer = null;

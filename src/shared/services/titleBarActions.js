@@ -1,6 +1,4 @@
-import { setWindowPinned, openSettingsWindow } from '@shared/api'
-
-let pinnedState = false
+import { getWindowPinned, setWindowPinned, openSettingsWindow } from '@shared/api'
 
 function emitPinStateChanged(state) {
   if (typeof window === 'undefined') {
@@ -12,14 +10,10 @@ function emitPinStateChanged(state) {
   }))
 }
 
-export function getWindowPinState() {
-  return pinnedState
-}
-
 export async function toggleWindowPin() {
-  const nextState = !pinnedState
+  const currentState = Boolean(await getWindowPinned())
+  const nextState = !currentState
   await setWindowPinned(nextState)
-  pinnedState = nextState
   emitPinStateChanged(nextState)
   return nextState
 }

@@ -1,11 +1,5 @@
 use super::state::{set_window_state, WindowState};
 use tauri::{AppHandle, LogicalSize, Manager, WebviewWindow};
-use std::sync::atomic::{AtomicBool, Ordering};
-
-static MAIN_WINDOW_DEACTIVATED_BY_APP_SWITCH: AtomicBool = AtomicBool::new(false);
-
-#[cfg(not(target_os = "windows"))]
-const ALWAYS_ON_TOP_REFRESH_DELAY_MS: u64 = 10;
 
 pub(crate) fn normalize_saved_window_size_for_restore(
     _window: &WebviewWindow,
@@ -31,23 +25,6 @@ fn capture_window_logical_size(window: &WebviewWindow) -> Result<(u32, u32), Str
     ))
 }
 
-pub fn deactivate_main_window_for_app_switch(window: &WebviewWindow) {
-    let state = super::state::get_window_state();
-    if state.state != WindowState::Visible || state.is_hidden || state.is_pinned {
-        return;
-    }
-
-    if let Err(error) = window.set_always_on_top(false) {
-        eprintln!("应用切换时取消主窗口置顶失败: {}", error);
-        return;
-    }
-
-    crate::windows::preview_window::suppress_preview_for_main_window_hide(&window.app_handle());
-    let _ = crate::windows::pin_image_window::close_image_preview(window.app_handle().clone());
-    MAIN_WINDOW_DEACTIVATED_BY_APP_SWITCH.store(true, Ordering::SeqCst);
-    crate::input_monitor::disable_navigation_keys();
-}
-
 // 显示主窗口
 pub fn show_main_window(window: &WebviewWindow) {
     if crate::services::system::is_front_app_globally_disabled_from_settings() {
@@ -65,8 +42,8 @@ pub fn show_main_window(window: &WebviewWindow) {
         let _ = super::restore_from_snap(window);
     }
 
-    show_normal_window(window);
     let _ = refresh_always_on_top(window);
+    show_normal_window(window);
 }
 
 // 隐藏主窗口
@@ -115,9 +92,10 @@ pub fn toggle_main_window_visibility(app: &AppHandle) {
 
             let state = super::state::get_window_state();
 
-            let should_show = MAIN_WINDOW_DEACTIVATED_BY_APP_SWITCH.load(Ordering::SeqCst)
-                || state.is_snapped && state.is_hidden
-                || state.state != WindowState::Visible;
+            let is_focused = window.is_focused().unwrap_or(false);
+            let should_show = state.is_snapped && state.is_hidden
+                || state.state != WindowState::Visible
+                || !is_focused;
 
             if should_show {
                 show_main_window(&window);
@@ -156,7 +134,9 @@ fn show_normal_window(window: &WebviewWindow) {
         }
     }
 
+    let _ = window.unminimize();
     let _ = window.show();
+    let _ = window.set_focus();
 
     if !was_visible {
         use tauri::Emitter;
@@ -171,62 +151,20 @@ fn show_normal_window(window: &WebviewWindow) {
         crate::services::webdav_sync::notify_main_window_shown(window.app_handle().clone());
     }
 
-    MAIN_WINDOW_DEACTIVATED_BY_APP_SWITCH.store(false, Ordering::SeqCst);
     crate::input_monitor::enable_mouse_monitoring();
     crate::input_monitor::enable_navigation_keys();
 }
 
-fn should_skip_always_on_top_refresh() -> bool {
-    crate::is_context_menu_visible()
-}
-
-#[cfg(target_os = "windows")]
 pub fn refresh_always_on_top(window: &WebviewWindow) -> Result<(), String> {
-    if should_skip_always_on_top_refresh() {
+    if crate::is_context_menu_visible() {
         return Ok(());
     }
 
-    use windows::Win32::Foundation::HWND;
-    use windows::Win32::UI::WindowsAndMessaging::{
-        SetWindowPos, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW,
-    };
-
-    let hwnd = window
-        .hwnd()
-        .map_err(|e| format!("获取主窗口句柄失败: {}", e))?;
-
-    unsafe {
-        SetWindowPos(
-            HWND(hwnd.0 as *mut _),
-            Some(HWND_TOPMOST),
-            0,
-            0,
-            0,
-            0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
-        )
-        .map_err(|e| format!("提升主窗口置顶顺序失败: {}", e))?;
-    }
-
-    Ok(())
-}
-
-#[cfg(not(target_os = "windows"))]
-pub fn refresh_always_on_top(window: &WebviewWindow) -> Result<(), String> {
-    if should_skip_always_on_top_refresh() {
-        return Ok(());
-    }
-
+    let pinned = crate::get_settings().window_pinned;
+    super::state::set_pinned(pinned);
     window
-        .set_always_on_top(false)
-        .map_err(|e| format!("取消窗口置顶失败: {}", e))?;
-    std::thread::sleep(std::time::Duration::from_millis(
-        ALWAYS_ON_TOP_REFRESH_DELAY_MS,
-    ));
-    window
-        .set_always_on_top(true)
-        .map_err(|e| format!("恢复窗口置顶失败: {}", e))?;
-    Ok(())
+        .set_always_on_top(pinned)
+        .map_err(|e| format!("同步窗口置顶状态失败: {}", e))
 }
 
 fn hide_normal_window(window: &WebviewWindow) {
@@ -288,11 +226,6 @@ fn hide_normal_window(window: &WebviewWindow) {
         let _ = crate::services::update_settings(updated);
     }
 
-    if !super::state::is_pinned() {
-        let _ = window.set_always_on_top(false);
-    }
-
-    MAIN_WINDOW_DEACTIVATED_BY_APP_SWITCH.store(false, Ordering::SeqCst);
     let _ = window.hide();
     set_window_state(WindowState::Hidden);
     crate::services::memory::schedule_cleanup_after_main_window_hide();

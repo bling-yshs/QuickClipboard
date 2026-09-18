@@ -144,7 +144,6 @@ pub fn run() {
                 commands::toggle_main_window,
                 commands::hide_main_window,
                 commands::show_main_window,
-                commands::raise_main_window_topmost,
                 commands::check_window_snap,
                 commands::position_window_at_cursor,
                 commands::center_main_window,
@@ -154,6 +153,7 @@ pub fn run() {
                 commands::restore_last_focus,
                 commands::hide_main_window_if_auto_shown,
                 commands::set_window_pinned,
+                commands::get_window_pinned,
                 commands::toggle_window_visibility,
                 commands::open_settings_window,
                 commands::open_community_window,
@@ -367,9 +367,8 @@ pub fn run() {
                 services::low_memory::init_window_activity_timestamp();
                 startup_diagnostics::set_startup_stage("执行 setup：初始化低占用面板");
                 services::low_memory::init_panel(app.handle().clone())?;
-                startup_diagnostics::set_startup_stage("执行 setup：获取主窗口");
-                let window = app.get_webview_window("main").ok_or("无法获取主窗口")?;
-                let _ = window.set_focusable(false);
+                startup_diagnostics::set_startup_stage("执行 setup：创建主窗口");
+                let window = windows::main_window::create_main_window(app.handle())?;
                 #[cfg(debug_assertions)]
                 let _ = window.open_devtools();
                 

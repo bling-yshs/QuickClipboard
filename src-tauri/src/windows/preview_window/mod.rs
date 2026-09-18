@@ -12,7 +12,6 @@ use tauri::{
 
 const PREVIEW_WINDOW_LABEL: &str = "preview-window";
 const PREVIEW_REUSE_TTL_MS: u64 = 60_000;
-const PREVIEW_ALWAYS_ON_TOP_REFRESH_DELAY_MS: u64 = 10;
 const PREVIEW_HIDE_WATCHDOG_DURATION_MS: u64 = 5_000;
 const PREVIEW_HIDE_WATCHDOG_INTERVAL_MS: u64 = 100;
 
@@ -69,15 +68,8 @@ fn hide_preview_window_internal(app: &AppHandle) {
 
 fn refresh_preview_window_always_on_top(window: &WebviewWindow) -> Result<(), String> {
     window
-        .set_always_on_top(false)
-        .map_err(|e| format!("取消预览窗口置顶失败: {}", e))?;
-    std::thread::sleep(std::time::Duration::from_millis(
-        PREVIEW_ALWAYS_ON_TOP_REFRESH_DELAY_MS,
-    ));
-    window
-        .set_always_on_top(true)
-        .map_err(|e| format!("恢复预览窗口置顶失败: {}", e))?;
-    Ok(())
+        .set_always_on_top(crate::get_settings().window_pinned)
+        .map_err(|e| format!("同步预览窗口置顶状态失败: {}", e))
 }
 
 fn apply_preview_window_bounds(
@@ -185,7 +177,7 @@ fn create_preview_window(
     .decorations(false)
     .transparent(true)
     .shadow(false)
-    .always_on_top(true)
+    .always_on_top(crate::get_settings().window_pinned)
     .skip_taskbar(true)
     .focused(false)
     .focusable(false)

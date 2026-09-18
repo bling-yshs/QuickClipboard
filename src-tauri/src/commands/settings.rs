@@ -101,6 +101,7 @@ pub fn save_settings(mut settings: AppSettings, app: tauri::AppHandle) -> Result
         || old_settings.webdav_username != settings.webdav_username
         || old_settings.webdav_root_path != settings.webdav_root_path;
     let show_tray_icon_changed = old_settings.show_tray_icon != settings.show_tray_icon;
+    let window_pinned_changed = old_settings.window_pinned != settings.window_pinned;
 
     if edge_hide_changed && !settings.edge_hide_enabled {
         settings.edge_snap_position = None;
@@ -124,6 +125,16 @@ pub fn save_settings(mut settings: AppSettings, app: tauri::AppHandle) -> Result
 
     if remember_window_size_disabled {
         restore_main_window_default_size(&app);
+    }
+
+    if window_pinned_changed {
+        crate::windows::main_window::set_pinned(settings.window_pinned);
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.set_always_on_top(settings.window_pinned);
+        }
+        if let Some(preview_window) = app.get_webview_window("preview-window") {
+            let _ = preview_window.set_always_on_top(settings.window_pinned);
+        }
     }
     
     if let Err(e) = crate::hotkey::reload_from_settings() {

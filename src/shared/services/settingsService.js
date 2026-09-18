@@ -86,6 +86,7 @@ export const defaultSettings = {
   autoClearSearch: false,
   windowPositionMode: 'smart',
   rememberWindowSize: true,
+  windowPinned: false,
   titleBarPosition: 'top',
   edgeHideEnabled: true,
   edgeSnapPosition: null,

@@ -296,8 +296,6 @@ pub fn ensure_main_window(app: &AppHandle) -> Result<tauri::WebviewWindow, Strin
 }
 
 fn recreate_main_window(app: &AppHandle) -> Result<(), String> {
-    use tauri::{WebviewUrl, WebviewWindowBuilder};
-
     if let Some(window) = app.get_webview_window("main") {
         #[cfg(windows)]
         if window.hwnd().is_ok() {
@@ -312,42 +310,7 @@ fn recreate_main_window(app: &AppHandle) -> Result<(), String> {
         let _ = window.destroy();
     }
 
-    let settings = crate::get_settings();
-
-    let (width, height) = if settings.remember_window_size {
-        settings.saved_window_size.unwrap_or((360, 520))
-    } else {
-        (360, 520)
-    };
-    let window = WebviewWindowBuilder::new(
-        app,
-        "main",
-        WebviewUrl::App("windows/main/index.html".into()),
-    )
-    .title("快速剪贴板")
-    .inner_size(360.0, 520.0)
-    .min_inner_size(350.0, 500.0)
-    .decorations(false)
-    .transparent(true)
-    .shadow(false)
-    .always_on_top(true)
-    .skip_taskbar(true)
-    .visible(false) 
-    .resizable(true)
-    .maximizable(false)
-    .minimizable(false)
-    .center()
-    .focused(false)
-    .visible_on_all_workspaces(true)
-    .disable_drag_drop_handler() 
-    .build()
-    .map_err(|e| format!("重建主窗口失败: {}", e))?;
-
-    if settings.remember_window_size {
-        crate::windows::main_window::apply_saved_window_size(&window, width, height);
-    }
-    
-    let _ = window.set_focusable(false);
+    let window = crate::windows::main_window::create_main_window(app)?;
     
     #[cfg(debug_assertions)]
     let _ = window.open_devtools();

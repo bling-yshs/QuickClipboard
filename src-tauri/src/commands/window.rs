@@ -117,11 +117,6 @@ pub fn show_main_window(window: WebviewWindow) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn raise_main_window_topmost(window: WebviewWindow) -> Result<(), String> {
-    crate::windows::main_window::refresh_always_on_top(&window)
-}
-
-#[tauri::command]
 pub fn check_window_snap(window: WebviewWindow) -> Result<(), String> {
     crate::check_snap(&window)
 }
@@ -166,12 +161,32 @@ pub fn hide_main_window_if_auto_shown(window: WebviewWindow) -> Result<(), Strin
 }
 
 #[tauri::command]
+pub fn get_window_pinned() -> bool {
+    crate::get_settings().window_pinned
+}
+
+#[tauri::command]
 pub fn set_window_pinned(window: WebviewWindow, pinned: bool) -> Result<(), String> {
+    use tauri::Emitter;
+
+    window
+        .set_always_on_top(pinned)
+        .map_err(|e| format!("设置窗口置顶失败: {}", e))?;
+
+    let mut settings = crate::get_settings();
+    settings.window_pinned = pinned;
+    crate::update_settings(settings)?;
     crate::windows::main_window::set_pinned(pinned);
 
-    window.set_always_on_top(pinned)
-        .map_err(|e| format!("设置窗口置顶失败: {}", e))?;
-    
+    if let Some(preview_window) = window.app_handle().get_webview_window("preview-window") {
+        let _ = preview_window.set_always_on_top(pinned);
+    }
+
+    let _ = window.app_handle().emit(
+        "settings-changed",
+        serde_json::json!({ "windowPinned": pinned }),
+    );
+
     Ok(())
 }
 

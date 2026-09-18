@@ -11,7 +11,6 @@ import { useSnapshot } from "valtio";
 import { useWindowDrag } from "@shared/hooks/useWindowDrag";
 import {
   toggleWindowPin,
-  getWindowPinState,
   openAppSettings,
 } from "@shared/services/titleBarActions";
 import { clipboardStore } from "@shared/store/clipboardStore";
@@ -84,7 +83,7 @@ const TitleBar = forwardRef(
     const navigationSnap = useSnapshot(navigationStore);
     const searchRef = useRef(null);
     const [isPinned, setIsPinned] = useState(() =>
-      Boolean(getWindowPinState()),
+      Boolean(settingsSnap.windowPinned),
     );
     const [oneTimePasteEnabled, setOneTimePasteEnabledState] = useState(() =>
       getOneTimePasteEnabled(),
@@ -133,6 +132,9 @@ const TitleBar = forwardRef(
       ],
       allowChildren: true,
     });
+    useEffect(() => {
+      setIsPinned(Boolean(settingsSnap.windowPinned));
+    }, [settingsSnap.windowPinned]);
     useEffect(() => {
       const handlePinStateChanged = (event) => {
         const pinned = Boolean(event?.detail?.pinned);
