@@ -166,7 +166,8 @@ pub fn refresh_always_on_top(window: &WebviewWindow) -> Result<(), String> {
 
     use windows::Win32::Foundation::HWND;
     use windows::Win32::UI::WindowsAndMessaging::{
-        SetWindowPos, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW,
+        SetWindowPos, HWND_NOTOPMOST, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
+        SWP_SHOWWINDOW,
     };
 
     let hwnd = window
@@ -174,16 +175,16 @@ pub fn refresh_always_on_top(window: &WebviewWindow) -> Result<(), String> {
         .map_err(|e| format!("获取主窗口句柄失败: {}", e))?;
 
     unsafe {
-        SetWindowPos(
-            HWND(hwnd.0 as *mut _),
-            Some(HWND_TOPMOST),
-            0,
-            0,
-            0,
-            0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
-        )
-        .map_err(|e| format!("提升主窗口置顶顺序失败: {}", e))?;
+        let hwnd = HWND(hwnd.0 as *mut _);
+        let flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW;
+
+        SetWindowPos(hwnd, Some(HWND_TOPMOST), 0, 0, 0, 0, flags)
+            .map_err(|e| format!("提升主窗口置顶顺序失败: {}", e))?;
+
+        if !super::state::is_pinned() {
+            SetWindowPos(hwnd, Some(HWND_NOTOPMOST), 0, 0, 0, 0, flags)
+                .map_err(|e| format!("恢复主窗口普通层级失败: {}", e))?;
+        }
     }
 
     Ok(())
@@ -204,6 +205,13 @@ pub fn refresh_always_on_top(window: &WebviewWindow) -> Result<(), String> {
     window
         .set_always_on_top(true)
         .map_err(|e| format!("恢复窗口置顶失败: {}", e))?;
+
+    if !super::state::is_pinned() {
+        window
+            .set_always_on_top(false)
+            .map_err(|e| format!("恢复窗口普通层级失败: {}", e))?;
+    }
+
     Ok(())
 }
 
