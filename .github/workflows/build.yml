@@ -43,7 +43,7 @@ jobs:
         run: npm run tauri:build -- --no-bundle
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
-          name: QuickClipboard-windows-${{ github.sha }}
           path: src-tauri/target/release/QuickClipboard.exe
+          archive: false
