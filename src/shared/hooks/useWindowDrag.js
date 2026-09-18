@@ -1,8 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { restoreLastFocus, startCustomDrag } from '@shared/api'
+import { startCustomDrag } from '@shared/api'
 
-// 自定义窗口拖拽 Hook
+/**
+ * 为标题栏绑定保持当前窗口焦点的拖拽行为。
+ * @param {Object} options 拖拽区域配置。
+ * @param {string[]} [options.excludeSelectors=[]] 排除拖拽的元素选择器。
+ * @param {boolean} [options.allowChildren=false] 是否允许从子元素开始拖拽。
+ * @returns {import('react').MutableRefObject<HTMLElement|null>} 拖拽区域引用。
+ */
 export function useWindowDrag(options = {}) {
   const { excludeSelectors = [], allowChildren = false } = options
   const elementRef = useRef(null)
@@ -18,7 +24,12 @@ export function useWindowDrag(options = {}) {
       isDraggingRef.current = false
     })
 
-    const handleMouseDown = async (e) => {
+    /**
+     * 在有效区域内按下左键时立即启动窗口拖拽。
+     * @param {MouseEvent} e 鼠标按下事件。
+     * @returns {void}
+     */
+    const handleMouseDown = (e) => {
       if (!allowChildren && e.target !== element) {
         return
       }
@@ -33,15 +44,15 @@ export function useWindowDrag(options = {}) {
         return
       }
 
-      try {
-        await restoreLastFocus()
-      } catch (error) {
-        console.error('恢复焦点窗口失败:', error)
-      }
-
+      e.preventDefault()
       startDrag(e)
     }
 
+    /**
+     * 请求后端拖动当前窗口，并在启动失败时恢复界面状态。
+     * @param {MouseEvent} initialEvent 起始鼠标事件。
+     * @returns {Promise<void>} 拖拽启动请求处理完成时兑现。
+     */
     const startDrag = async (initialEvent) => {
       if (isDraggingRef.current) return
       isDraggingRef.current = true
@@ -51,8 +62,6 @@ export function useWindowDrag(options = {}) {
         document.body.style.cursor = 'move'
 
         await startCustomDrag(initialEvent.screenX, initialEvent.screenY)
-
-        initialEvent.preventDefault()
       } catch (error) {
         console.error('启动拖拽失败:', error)
         isDraggingRef.current = false
@@ -71,4 +80,3 @@ export function useWindowDrag(options = {}) {
 
   return elementRef
 }
-

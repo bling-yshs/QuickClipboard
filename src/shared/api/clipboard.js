@@ -201,9 +201,21 @@ export async function saveImageFromPath(filePath) {
   return await invoke('save_image_from_path', { filePath })
 }
 
-// 复制剪贴板项内容（不记录到历史）
+/**
+ * 复制剪贴板项，并根据操作后置顶设置更新列表顺序。
+ * @param {number} id 剪贴板记录 ID。
+ * @returns {Promise<void>} 复制及启用的置顶操作完成时兑现。
+ */
 export async function copyClipboardItem(id) {
-  return await invoke('copy_clipboard_item', { id })
+  await invoke('copy_clipboard_item', { id })
+  const { settingsStore } = await import('@shared/store/settingsStore')
+  if (settingsStore.pasteToTop) {
+    const { clipboardStore, refreshClipboardHistory } = await import('@shared/store/clipboardStore')
+    if (!clipboardStore.getLoadedItemById(id)?.is_pinned) {
+      await moveClipboardItemToTop(id)
+      await refreshClipboardHistory()
+    }
+  }
 }
 
 export async function mergeCopyClipboardItems(ids) {
