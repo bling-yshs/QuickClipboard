@@ -280,5 +280,11 @@ unsafe extern "system" fn focus_callback(
     
     *LAST_FOCUS_HWND.lock() = Some(hwnd_val);
 
+    crate::services::system::input_common::run_on_main_thread(|| {
+        if let Some(window) = crate::services::system::input_common::try_get_main_window() {
+            crate::windows::main_window::deactivate_main_window_for_app_switch(&window);
+        }
+    });
+
     crate::services::system::hotkey::sync_hotkeys_for_foreground();
 }

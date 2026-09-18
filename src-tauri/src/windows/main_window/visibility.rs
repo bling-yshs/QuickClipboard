@@ -1,5 +1,8 @@
 use super::state::{set_window_state, WindowState};
 use tauri::{AppHandle, LogicalSize, Manager, WebviewWindow};
+use std::sync::atomic::{AtomicBool, Ordering};
+
+static MAIN_WINDOW_DEACTIVATED_BY_APP_SWITCH: AtomicBool = AtomicBool::new(false);
 
 #[cfg(not(target_os = "windows"))]
 const ALWAYS_ON_TOP_REFRESH_DELAY_MS: u64 = 10;
@@ -26,6 +29,23 @@ fn capture_window_logical_size(window: &WebviewWindow) -> Result<(u32, u32), Str
         ((size.width as f64) / scale_factor).round().max(1.0) as u32,
         ((size.height as f64) / scale_factor).round().max(1.0) as u32,
     ))
+}
+
+pub fn deactivate_main_window_for_app_switch(window: &WebviewWindow) {
+    let state = super::state::get_window_state();
+    if state.state != WindowState::Visible || state.is_hidden || state.is_pinned {
+        return;
+    }
+
+    if let Err(error) = window.set_always_on_top(false) {
+        eprintln!("应用切换时取消主窗口置顶失败: {}", error);
+        return;
+    }
+
+    crate::windows::preview_window::suppress_preview_for_main_window_hide(&window.app_handle());
+    let _ = crate::windows::pin_image_window::close_image_preview(window.app_handle().clone());
+    MAIN_WINDOW_DEACTIVATED_BY_APP_SWITCH.store(true, Ordering::SeqCst);
+    crate::input_monitor::disable_navigation_keys();
 }
 
 // 显示主窗口
@@ -95,8 +115,9 @@ pub fn toggle_main_window_visibility(app: &AppHandle) {
 
             let state = super::state::get_window_state();
 
-            let should_show =
-                state.is_snapped && state.is_hidden || state.state != WindowState::Visible;
+            let should_show = MAIN_WINDOW_DEACTIVATED_BY_APP_SWITCH.load(Ordering::SeqCst)
+                || state.is_snapped && state.is_hidden
+                || state.state != WindowState::Visible;
 
             if should_show {
                 show_main_window(&window);
@@ -150,6 +171,7 @@ fn show_normal_window(window: &WebviewWindow) {
         crate::services::webdav_sync::notify_main_window_shown(window.app_handle().clone());
     }
 
+    MAIN_WINDOW_DEACTIVATED_BY_APP_SWITCH.store(false, Ordering::SeqCst);
     crate::input_monitor::enable_mouse_monitoring();
     crate::input_monitor::enable_navigation_keys();
 }
@@ -166,8 +188,7 @@ pub fn refresh_always_on_top(window: &WebviewWindow) -> Result<(), String> {
 
     use windows::Win32::Foundation::HWND;
     use windows::Win32::UI::WindowsAndMessaging::{
-        SetWindowPos, HWND_NOTOPMOST, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE,
-        SWP_SHOWWINDOW,
+        SetWindowPos, HWND_TOPMOST, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_SHOWWINDOW,
     };
 
     let hwnd = window
@@ -175,16 +196,16 @@ pub fn refresh_always_on_top(window: &WebviewWindow) -> Result<(), String> {
         .map_err(|e| format!("获取主窗口句柄失败: {}", e))?;
 
     unsafe {
-        let hwnd = HWND(hwnd.0 as *mut _);
-        let flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW;
-
-        SetWindowPos(hwnd, Some(HWND_TOPMOST), 0, 0, 0, 0, flags)
-            .map_err(|e| format!("提升主窗口置顶顺序失败: {}", e))?;
-
-        if !super::state::is_pinned() {
-            SetWindowPos(hwnd, Some(HWND_NOTOPMOST), 0, 0, 0, 0, flags)
-                .map_err(|e| format!("恢复主窗口普通层级失败: {}", e))?;
-        }
+        SetWindowPos(
+            HWND(hwnd.0 as *mut _),
+            Some(HWND_TOPMOST),
+            0,
+            0,
+            0,
+            0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW,
+        )
+        .map_err(|e| format!("提升主窗口置顶顺序失败: {}", e))?;
     }
 
     Ok(())
@@ -205,13 +226,6 @@ pub fn refresh_always_on_top(window: &WebviewWindow) -> Result<(), String> {
     window
         .set_always_on_top(true)
         .map_err(|e| format!("恢复窗口置顶失败: {}", e))?;
-
-    if !super::state::is_pinned() {
-        window
-            .set_always_on_top(false)
-            .map_err(|e| format!("恢复窗口普通层级失败: {}", e))?;
-    }
-
     Ok(())
 }
 
@@ -278,6 +292,7 @@ fn hide_normal_window(window: &WebviewWindow) {
         let _ = window.set_always_on_top(false);
     }
 
+    MAIN_WINDOW_DEACTIVATED_BY_APP_SWITCH.store(false, Ordering::SeqCst);
     let _ = window.hide();
     set_window_state(WindowState::Hidden);
     crate::services::memory::schedule_cleanup_after_main_window_hide();
