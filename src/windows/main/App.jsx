@@ -203,6 +203,15 @@ function App() {
       const handleWindowHide = () => {
         searchRef.current?.blur?.();
       };
+      const handleInputReset = () => {
+        document.dispatchEvent(new MouseEvent('mouseup', {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+          button: 0,
+          buttons: 0
+        }));
+      };
       const unlisten1 = await listen('window-show-animation', handleWindowShow);
       const unlisten2 = await listen('edge-snap-show', handleWindowShow);
       const unlisten3 = await listen('paste-plain-text-selected', () => {
@@ -235,6 +244,7 @@ function App() {
       });
       const unlisten6 = await listen('window-hide-animation', handleWindowHide);
       const unlisten7 = await listen('edge-snap-hide', handleWindowHide);
+      const unlisten8 = await listen('window-input-reset', handleInputReset);
 
       return () => {
         unlisten1();
@@ -244,6 +254,7 @@ function App() {
         unlisten5();
         unlisten6();
         unlisten7();
+        unlisten8();
       };
     };
     let cleanup = setupListeners();

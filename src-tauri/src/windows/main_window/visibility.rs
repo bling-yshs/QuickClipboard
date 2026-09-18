@@ -138,6 +138,9 @@ fn show_normal_window(window: &WebviewWindow) {
     let _ = window.show();
     let _ = window.set_focus();
 
+    use tauri::Emitter;
+    let _ = window.emit("window-input-reset", ());
+
     if !was_visible {
         use tauri::Emitter;
         let _ = window.emit("window-show-animation", ());

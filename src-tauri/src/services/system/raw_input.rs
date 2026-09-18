@@ -254,8 +254,10 @@ mod windows_raw_input {
                 const RI_MOUSE_WHEEL: u16 = 0x0400;
 
                 if (button_flags & (RI_MOUSE_LEFT_BUTTON_DOWN | RI_MOUSE_RIGHT_BUTTON_DOWN)) != 0 {
-                    input_common::run_on_main_thread(|| {
-                        handle_click_outside_impl();
+                    let monitoring_generation = input_common::mouse_monitoring_generation();
+                    let (cursor_x, cursor_y) = crate::mouse::get_cursor_position();
+                    input_common::run_on_main_thread(move || {
+                        handle_click_outside_impl(cursor_x, cursor_y, monitoring_generation);
                     });
                 }
 
@@ -648,8 +650,7 @@ mod windows_raw_input {
             .as_millis() as u64
     }
 
-    fn is_in_tray_click_region() -> bool {
-        let (cursor_x, cursor_y) = crate::mouse::get_cursor_position();
+    fn is_in_tray_click_region(cursor_x: i32, cursor_y: i32) -> bool {
         LAST_TRAY_RECT
             .lock()
             .map(|(left, top, right, bottom)| {
@@ -789,9 +790,7 @@ mod windows_raw_input {
         });
     }
 
-    fn is_mouse_outside_window_impl(window: &WebviewWindow) -> bool {
-        let (cursor_x, cursor_y) = crate::mouse::get_cursor_position();
-
+    fn is_point_outside_window_impl(window: &WebviewWindow, cursor_x: i32, cursor_y: i32) -> bool {
         let (win_x, win_y, win_width, win_height) = match crate::get_window_bounds(window) {
             Ok(bounds) => bounds,
             Err(_) => return false,
@@ -830,20 +829,23 @@ mod windows_raw_input {
             return;
         }
 
-        if is_mouse_outside_window_impl(&main_window) {
+        if is_point_outside_window_impl(&main_window, cursor_x, cursor_y) {
             crate::windows::preview_window::force_close_preview_window(&app);
         }
     }
 
-    fn handle_click_outside_impl() {
-        if is_in_tray_click_region() {
+    fn handle_click_outside_impl(
+        cursor_x: i32,
+        cursor_y: i32,
+        monitoring_generation: u64,
+    ) {
+        if is_in_tray_click_region(cursor_x, cursor_y) {
             return;
         }
 
         if crate::services::low_memory::is_low_memory_mode()
             && crate::services::low_memory::is_panel_visible()
         {
-            let (cursor_x, cursor_y) = crate::mouse::get_cursor_position();
             if !crate::services::low_memory::is_point_in_panel(cursor_x, cursor_y) {
                 let _ = crate::services::low_memory::hide_panel();
             }
@@ -853,7 +855,6 @@ mod windows_raw_input {
         if crate::is_context_menu_visible() {
             if let Some(main_window) = input_common::try_get_main_window() {
                 if let Some(menu_window) = main_window.app_handle().get_webview_window("context-menu") {
-                    let (cursor_x, cursor_y) = crate::mouse::get_cursor_position();
                     if menu_window.is_visible().unwrap_or(false)
                         && !crate::windows::plugins::context_menu::is_point_in_menu_region(cursor_x, cursor_y)
                     {
@@ -861,6 +862,10 @@ mod windows_raw_input {
                     }
                 }
             }
+            return;
+        }
+
+        if !input_common::is_current_mouse_monitoring_generation(monitoring_generation) {
             return;
         }
 
@@ -879,7 +884,13 @@ mod windows_raw_input {
                 return;
             }
 
-            if window.is_visible().unwrap_or(false) && is_mouse_outside_window_impl(&window) {
+            if state.state != crate::WindowState::Visible {
+                return;
+            }
+
+            if window.is_visible().unwrap_or(false)
+                && is_point_outside_window_impl(&window, cursor_x, cursor_y)
+            {
                 let _ = crate::check_snap(&window);
                 crate::hide_main_window(&window);
             }
