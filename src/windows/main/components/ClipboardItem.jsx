@@ -51,6 +51,11 @@ const getItemPreviewMode = (item, type, displayPriorityOrder) => {
   return null;
 };
 
+/**
+ * 渲染列表项目并根据预览总开关控制悬停预览。
+ * @param {Object} props 项目数据及交互配置。
+ * @returns {JSX.Element} 列表项目。
+ */
 function ClipboardItem({
   item,
   index,
@@ -86,7 +91,7 @@ function ClipboardItem({
   const isImageType = renderType === 'image';
   const isImageOrFileType = isFileType || isImageType;
   const previewMode = getItemPreviewMode(item, renderType, settings.displayPriorityOrder);
-  const previewEnabled = (() => {
+  const previewEnabled = settings.previewEnabled !== false && (() => {
     if (previewMode === PREVIEW_MODE_IMAGE) {
       return settings.imagePreview !== false;
     }
@@ -171,6 +176,19 @@ function ClipboardItem({
       });
     }, PREVIEW_HOVER_DELAY_MS);
   }, [closeHoverPreview, getPreviewAnchorRect, item.id, previewEnabled, previewMode]);
+
+  useEffect(() => {
+    if (!previewEnabled) {
+      if (previewTimerRef.current) {
+        clearTimeout(previewTimerRef.current);
+        previewTimerRef.current = null;
+      }
+      return;
+    }
+    if (!isDragActive && !isMultiSelectMode && itemRootRef.current?.matches(':hover')) {
+      scheduleHoverPreview();
+    }
+  }, [previewEnabled, isDragActive, isMultiSelectMode, scheduleHoverPreview]);
 
   // 拖拽开始时关闭预览
   useEffect(() => {

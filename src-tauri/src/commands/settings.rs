@@ -342,28 +342,6 @@ pub fn toggle_paste_with_format(app: &tauri::AppHandle) -> Result<(), String> {
     result
 }
 
-/// 切换预览总开关，保留各类型预览偏好并广播更新。
-///
-/// # Arguments
-/// * `app` - 应用句柄。
-///
-/// # Returns
-/// 保存成功返回空值，失败返回错误信息。
-pub fn toggle_preview(app: &tauri::AppHandle) -> Result<(), String> {
-    let mut settings = get_settings();
-    settings.preview_enabled = !settings.preview_enabled;
-    let enabled = settings.preview_enabled;
-    save_settings(settings, app.clone())?;
-
-    use tauri::Emitter;
-    let _ = app.emit("settings-changed", serde_json::json!({
-        "previewEnabled": enabled
-    }));
-    let message = if enabled { "预览已启用" } else { "预览已禁用" };
-    let _ = crate::services::notification::show_notification(app, "QuickClipboard", message);
-    Ok(())
-}
-
 // 保存窗口位置
 #[tauri::command]
 pub fn save_window_position(x: i32, y: i32) -> Result<(), String> {

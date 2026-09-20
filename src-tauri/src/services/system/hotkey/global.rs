@@ -393,24 +393,6 @@ pub fn register_toggle_paste_with_format_hotkey(shortcut_str: &str) -> Result<()
     })
 }
 
-/// 注册切换预览总开关的全局快捷键。
-///
-/// # Arguments
-/// * `shortcut_str` - 用户配置的快捷键组合。
-///
-/// # Returns
-/// 注册成功返回空值，失败返回错误信息。
-pub fn register_toggle_preview_hotkey(shortcut_str: &str) -> Result<(), String> {
-    register_shortcut("toggle_preview", shortcut_str, |app| {
-        let app_clone = app.clone();
-        std::thread::spawn(move || {
-            if let Err(e) = crate::commands::settings::toggle_preview(&app_clone) {
-                eprintln!("切换预览状态失败: {}", e);
-            }
-        });
-    })
-}
-
 pub fn register_toggle_low_memory_mode_hotkey(shortcut_str: &str) -> Result<(), String> {
     register_shortcut("toggle_low_memory_mode", shortcut_str, |app| {
         let app_clone = app.clone();
@@ -813,12 +795,6 @@ pub fn reload_from_settings() -> Result<(), String> {
             }
         }
 
-        if !settings.toggle_preview_shortcut.is_empty() {
-            if let Err(e) = register_toggle_preview_hotkey(&settings.toggle_preview_shortcut) {
-                eprintln!("注册切换预览快捷键失败: {}", e);
-            }
-        }
-        
         if !settings.paste_plain_text_shortcut.is_empty() {
             if let Err(e) = register_paste_plain_text_hotkey(&settings.paste_plain_text_shortcut) {
                 eprintln!("注册纯文本粘贴快捷键失败: {}", e);

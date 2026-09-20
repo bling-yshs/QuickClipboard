@@ -1,5 +1,5 @@
 import '@tabler/icons-webfont/dist/tabler-icons.min.css';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Tooltip from '@shared/components/common/Tooltip.jsx';
 
@@ -67,11 +67,17 @@ function normalizeMainKeyFromEvent(e) {
   return key;
 }
 
+/**
+ * 录制快捷键，可按配置支持单修饰键。
+ * @param {Object} props 当前快捷键、录制选项及变更回调。
+ * @returns {JSX.Element} 快捷键输入框。
+ */
 function ShortcutInput({
   value,
   onChange,
   onReset,
   presets = [],
+  allowModifierOnly = false,
   hasError = false,
   errorMessage = null
 }) {
@@ -79,13 +85,25 @@ function ShortcutInput({
     t
   } = useTranslation();
   const [isListening, setIsListening] = useState(false);
+  const modifierCandidate = useRef(null);
+  /**
+   * 录制按键组合或记录单修饰键候选。
+   * @param {KeyboardEvent} e 键盘事件。
+   * @returns {void}
+   */
   const handleKeyDown = e => {
     if (!isListening) return;
     e.preventDefault();
     e.stopPropagation();
     if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) {
+      if (!e.repeat) {
+        modifierCandidate.current = allowModifierOnly
+          && [e.ctrlKey, e.altKey, e.shiftKey, e.metaKey].filter(Boolean).length === 1
+          ? e.key : null;
+      }
       return;
     }
+    modifierCandidate.current = null;
     const keys = [];
 
     // 添加修饰键
@@ -101,6 +119,19 @@ function ShortcutInput({
     onChange(shortcut);
     setIsListening(false);
   };
+  /**
+   * 松开单独按下的修饰键时完成录制。
+   * @param {KeyboardEvent} e 键盘事件。
+   * @returns {void}
+   */
+  const handleKeyUp = e => {
+    if (!isListening || !allowModifierOnly || modifierCandidate.current !== e.key) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onChange({ Control: 'Ctrl', Alt: 'Alt', Shift: 'Shift', Meta: 'Win' }[e.key]);
+    modifierCandidate.current = null;
+    setIsListening(false);
+  };
   const handleClear = e => {
     e.stopPropagation();
     onChange('');
@@ -108,7 +139,7 @@ function ShortcutInput({
   return <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <div className="relative">
-          <input type="text" value={isListening ? t('settings.shortcuts.listening') : formatShortcutForDisplay(value || '')} onClick={() => setIsListening(true)} onKeyDown={handleKeyDown} onBlur={() => setIsListening(false)} readOnly placeholder={t('settings.shortcuts.clickToSet')} className={`
+          <input type="text" value={isListening ? t('settings.shortcuts.listening') : formatShortcutForDisplay(value || '')} onClick={() => { modifierCandidate.current = null; setIsListening(true); }} onKeyDown={handleKeyDown} onKeyUp={handleKeyUp} onBlur={() => { modifierCandidate.current = null; setIsListening(false); }} readOnly placeholder={t('settings.shortcuts.clickToSet')} className={`
               h-10 px-3 pr-8 w-72 text-sm border rounded-lg
               bg-qc-panel
               focus:outline-none cursor-pointer

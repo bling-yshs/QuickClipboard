@@ -12,6 +12,7 @@ import { useWindowDrag } from '@shared/hooks/useWindowDrag';
 import { useTheme, applyThemeToBody } from '@shared/hooks/useTheme';
 import { useSettingsSync } from '@shared/hooks/useSettingsSync';
 import { useNavigationKeyboard } from '@shared/hooks/useNavigationKeyboard';
+import { bindPreviewShortcut } from '@shared/utils/previewShortcut';
 import { useWindowAnimation } from '@shared/hooks/useWindowAnimation';
 import { applyBackgroundImage, clearBackgroundImage } from '@shared/utils/backgroundManager';
 import { getUpdateBannerState } from '@shared/api/settings';
@@ -53,6 +54,10 @@ function getIsCompactFilters() {
   return typeof window !== 'undefined' && window.matchMedia(COMPACT_FILTERS_MEDIA_QUERY).matches;
 }
 
+/**
+ * 渲染主窗口并注册应用内交互。
+ * @returns {JSX.Element} 主窗口界面。
+ */
 function App() {
   const {
     t
@@ -89,6 +94,25 @@ function App() {
 
   // 监听设置变更事件
   useSettingsSync();
+
+  useEffect(() => {
+    let saving = false;
+    const binding = bindPreviewShortcut(window, settings.togglePreviewShortcut, async () => {
+      if (saving) return;
+      saving = true;
+      try {
+        await settingsStore.saveSetting('previewEnabled', settingsStore.previewEnabled === false, { showToast: false });
+      } finally {
+        saving = false;
+      }
+    });
+    // 原生导航快捷键可能消耗按键事件，同步取消单 Ctrl 候选。
+    const unlisten = listen('navigation-action', binding.cancel);
+    return () => {
+      binding.dispose();
+      unlisten.then(dispose => dispose()).catch(console.error);
+    };
+  }, [settings.togglePreviewShortcut]);
 
   useEffect(() => {
     if (!isMainTabVisible(activeTab, settings.visibleOptionalTabs)) {

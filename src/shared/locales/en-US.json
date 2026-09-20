@@ -574,7 +574,7 @@
       "toggleClipboardMonitorDesc": "Quickly enable or disable clipboard monitoring",
       "togglePasteWithFormat": "Toggle Paste With Format",
       "togglePreview": "Toggle Preview",
-      "togglePreviewDesc": "Toggle all hover previews while keeping individual image, text and file preferences",
+      "togglePreviewDesc": "Toggle previews within the main window. Defaults to tapping Ctrl (on release), keeping individual preview preferences",
       "togglePasteWithFormatDesc": "Quickly toggle whether to preserve formatting when pasting",
       "toggleLowMemoryMode": "Toggle Low Memory Mode",
       "toggleLowMemoryModeDesc": "Quickly enter or exit low memory mode. No shortcut is set by default.",

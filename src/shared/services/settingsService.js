@@ -70,7 +70,7 @@ export const defaultSettings = {
   togglePinShortcut: 'Ctrl+P',
   toggleClipboardMonitorShortcut: '',
   togglePasteWithFormatShortcut: '',
-  togglePreviewShortcut: '',
+  togglePreviewShortcut: 'Ctrl',
   toggleLowMemoryModeShortcut: '',
   pastePlainTextShortcut: '',
   

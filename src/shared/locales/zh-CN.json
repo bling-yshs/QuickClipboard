@@ -574,7 +574,7 @@
       "toggleClipboardMonitorDesc": "快速启用或禁用剪贴板监听功能",
       "togglePasteWithFormat": "开/关格式粘贴",
       "togglePreview": "开/关预览",
-      "togglePreviewDesc": "切换预览总开关，保留图片、文本和文件各自的预览设置",
+      "togglePreviewDesc": "仅在主窗口内切换预览总开关，默认单按 Ctrl（松开时生效），保留各类型预览设置",
       "togglePasteWithFormatDesc": "快速切换粘贴时是否保留格式",
       "toggleLowMemoryMode": "切换低占用模式",
       "toggleLowMemoryModeDesc": "快速进入或退出低占用模式，默认不设置快捷键",

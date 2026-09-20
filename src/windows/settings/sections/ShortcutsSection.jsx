@@ -119,9 +119,6 @@ function ShortcutsSection({ settings, onSettingChange, activeTab }) {
             <SettingItem label={t('settings.shortcuts.toggleClipboardMonitor')} description={t('settings.shortcuts.toggleClipboardMonitorDesc')}>
               <ShortcutInput value={settings.toggleClipboardMonitorShortcut} onChange={value => handleShortcutChange('toggleClipboardMonitorShortcut', value)} onReset={() => handleShortcutChange('toggleClipboardMonitorShortcut', '')} hasError={hasErrorStatus('toggleClipboardMonitorShortcut', 'toggle_clipboard_monitor')} errorMessage={getErrorMessage('toggleClipboardMonitorShortcut', 'toggle_clipboard_monitor')} />
             </SettingItem>
-            <SettingItem label={t('settings.shortcuts.togglePreview')} description={t('settings.shortcuts.togglePreviewDesc')}>
-              <ShortcutInput value={settings.togglePreviewShortcut} onChange={value => handleShortcutChange('togglePreviewShortcut', value)} onReset={() => handleShortcutChange('togglePreviewShortcut', '')} hasError={hasErrorStatus('togglePreviewShortcut', 'toggle_preview')} errorMessage={getErrorMessage('togglePreviewShortcut', 'toggle_preview')} />
-            </SettingItem>
             <SettingItem label={t('settings.shortcuts.togglePasteWithFormat')} description={t('settings.shortcuts.togglePasteWithFormatDesc')}>
               <ShortcutInput value={settings.togglePasteWithFormatShortcut} onChange={value => handleShortcutChange('togglePasteWithFormatShortcut', value)} onReset={() => handleShortcutChange('togglePasteWithFormatShortcut', '')} hasError={hasErrorStatus('togglePasteWithFormatShortcut', 'toggle_paste_with_format')} errorMessage={getErrorMessage('togglePasteWithFormatShortcut', 'toggle_paste_with_format')} />
             </SettingItem>
@@ -199,6 +196,9 @@ function ShortcutsSection({ settings, onSettingChange, activeTab }) {
             </SettingItem>
             <SettingItem label={t('settings.shortcuts.nextGroup')} description={t('settings.shortcuts.nextGroupDesc')}>
               <ShortcutInput value={settings.nextGroupShortcut} onChange={value => onSettingChange('nextGroupShortcut', value)} onReset={() => onSettingChange('nextGroupShortcut', 'Ctrl+ArrowDown')} hasError={hasErrorStatus('nextGroupShortcut')} errorMessage={getErrorMessage('nextGroupShortcut')} />
+            </SettingItem>
+            <SettingItem label={t('settings.shortcuts.togglePreview')} description={t('settings.shortcuts.togglePreviewDesc')}>
+              <ShortcutInput value={settings.togglePreviewShortcut} allowModifierOnly presets={['Ctrl']} onChange={value => onSettingChange('togglePreviewShortcut', value)} onReset={() => onSettingChange('togglePreviewShortcut', 'Ctrl')} hasError={hasErrorStatus('togglePreviewShortcut')} errorMessage={getErrorMessage('togglePreviewShortcut')} />
             </SettingItem>
             <SettingItem label={t('settings.shortcuts.togglePin')} description={t('settings.shortcuts.togglePinDesc')}>
               <ShortcutInput value={settings.togglePinShortcut} onChange={value => onSettingChange('togglePinShortcut', value)} onReset={() => onSettingChange('togglePinShortcut', 'Ctrl+P')} hasError={hasErrorStatus('togglePinShortcut')} errorMessage={getErrorMessage('togglePinShortcut')} />

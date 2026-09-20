@@ -343,7 +343,7 @@ impl Default for AppSettings {
             toggle_pin_shortcut: "Ctrl+P".to_string(),
             toggle_clipboard_monitor_shortcut: String::new(),
             toggle_paste_with_format_shortcut: String::new(),
-            toggle_preview_shortcut: String::new(),
+            toggle_preview_shortcut: "Ctrl".to_string(),
             toggle_low_memory_mode_shortcut: String::new(),
             paste_plain_text_shortcut: String::new(),
 
