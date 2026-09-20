@@ -200,6 +200,17 @@ fn create_preview_window(
     Ok(window)
 }
 
+/// 在预览总开关启用时创建或更新悬停预览。
+///
+/// # Arguments
+/// * `app` - 应用句柄。
+/// * `mode` - 预览类型。
+/// * `source` - 数据来源。
+/// * `item_id` - 项目标识。
+/// * `item_rect` - 项目在主窗口中的位置。
+///
+/// # Returns
+/// 请求处理成功返回空值，失败返回错误信息。
 #[tauri::command]
 pub async fn show_preview_window(
     app: AppHandle,
@@ -208,7 +219,9 @@ pub async fn show_preview_window(
     item_id: String,
     item_rect: Option<PreviewAnchorRect>,
 ) -> Result<(), String> {
-    if PREVIEW_SUPPRESSED.load(Ordering::SeqCst) {
+    if !crate::services::get_settings().preview_enabled
+        || PREVIEW_SUPPRESSED.load(Ordering::SeqCst)
+    {
         return Ok(());
     }
 
@@ -376,8 +389,19 @@ pub fn force_close_preview_window(app: &AppHandle) {
     destroy_preview_window_internal(app);
 }
 
+/// 显示仍有效且预览总开关启用的预览请求。
+///
+/// # Arguments
+/// * `app` - 应用句柄。
+/// * `request_id` - 已完成渲染的预览请求标识。
+///
+/// # Returns
+/// 请求处理成功返回空值，失败返回错误信息。
 #[tauri::command]
 pub fn reveal_preview_window(app: AppHandle, request_id: u64) -> Result<(), String> {
+    if !crate::services::get_settings().preview_enabled {
+        return Ok(());
+    }
     let current_request_id = PREVIEW_DATA
         .lock()
         .map_err(|_| "获取预览窗口状态失败".to_string())?

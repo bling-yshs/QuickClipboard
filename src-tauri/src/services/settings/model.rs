@@ -41,6 +41,7 @@ pub struct AppSettings {
     pub ignore_duplicates: bool,
     pub save_images: bool,
     pub image_preview: bool,
+    pub preview_enabled: bool,
     pub text_preview: bool,
     pub file_preview: bool,
     #[serde(default)]
@@ -164,6 +165,7 @@ pub struct AppSettings {
     pub toggle_pin_shortcut: String,
     pub toggle_clipboard_monitor_shortcut: String,
     pub toggle_paste_with_format_shortcut: String,
+    pub toggle_preview_shortcut: String,
     pub toggle_low_memory_mode_shortcut: String,
     pub paste_plain_text_shortcut: String,
 
@@ -195,6 +197,10 @@ pub struct AppSettings {
 }
 
 impl Default for AppSettings {
+    /// 返回包含默认启用预览总开关的应用设置。
+    ///
+    /// # Returns
+    /// 各设置项的默认值。
     fn default() -> Self {
         Self {
             auto_start: false,
@@ -232,6 +238,7 @@ impl Default for AppSettings {
             ignore_duplicates: true,
             save_images: true,
             image_preview: true,
+            preview_enabled: true,
             text_preview: true,
             file_preview: true,
             settings_migration_version: Some(SETTINGS_MIGRATION_VERSION_V3),
@@ -336,6 +343,7 @@ impl Default for AppSettings {
             toggle_pin_shortcut: "Ctrl+P".to_string(),
             toggle_clipboard_monitor_shortcut: String::new(),
             toggle_paste_with_format_shortcut: String::new(),
+            toggle_preview_shortcut: String::new(),
             toggle_low_memory_mode_shortcut: String::new(),
             paste_plain_text_shortcut: String::new(),
 

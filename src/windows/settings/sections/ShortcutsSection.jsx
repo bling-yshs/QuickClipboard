@@ -13,6 +13,11 @@ import { useShortcutStatuses } from '@shared/hooks/useShortcutStatuses';
 import { useShortcutDuplicateCheck } from '@shared/hooks/useShortcutDuplicateCheck';
 import { promptDisableWinVHotkeyIfNeeded, promptEnableWinVHotkey } from '@shared/api/system';
 
+/**
+ * 渲染快捷键设置及冲突状态。
+ * @param {Object} props 设置数据、变更回调与当前页签。
+ * @returns {JSX.Element} 快捷键设置界面。
+ */
 function ShortcutsSection({ settings, onSettingChange, activeTab }) {
   const { t } = useTranslation();
   const globalSettings = useSnapshot(settingsStore);
@@ -60,6 +65,10 @@ function ShortcutsSection({ settings, onSettingChange, activeTab }) {
     { value: 'long_press', label: t('settings.shortcuts.mouseMiddleTriggerLongPress') }
   ];
 
+  /**
+   * 渲染当前快捷键页签。
+   * @returns {JSX.Element|undefined} 页签内容。
+   */
   const renderTabContent = () => {
     switch (activeTab) {
       case 'globalHotkey':
@@ -109,6 +118,9 @@ function ShortcutsSection({ settings, onSettingChange, activeTab }) {
             </SettingItem>
             <SettingItem label={t('settings.shortcuts.toggleClipboardMonitor')} description={t('settings.shortcuts.toggleClipboardMonitorDesc')}>
               <ShortcutInput value={settings.toggleClipboardMonitorShortcut} onChange={value => handleShortcutChange('toggleClipboardMonitorShortcut', value)} onReset={() => handleShortcutChange('toggleClipboardMonitorShortcut', '')} hasError={hasErrorStatus('toggleClipboardMonitorShortcut', 'toggle_clipboard_monitor')} errorMessage={getErrorMessage('toggleClipboardMonitorShortcut', 'toggle_clipboard_monitor')} />
+            </SettingItem>
+            <SettingItem label={t('settings.shortcuts.togglePreview')} description={t('settings.shortcuts.togglePreviewDesc')}>
+              <ShortcutInput value={settings.togglePreviewShortcut} onChange={value => handleShortcutChange('togglePreviewShortcut', value)} onReset={() => handleShortcutChange('togglePreviewShortcut', '')} hasError={hasErrorStatus('togglePreviewShortcut', 'toggle_preview')} errorMessage={getErrorMessage('togglePreviewShortcut', 'toggle_preview')} />
             </SettingItem>
             <SettingItem label={t('settings.shortcuts.togglePasteWithFormat')} description={t('settings.shortcuts.togglePasteWithFormatDesc')}>
               <ShortcutInput value={settings.togglePasteWithFormatShortcut} onChange={value => handleShortcutChange('togglePasteWithFormatShortcut', value)} onReset={() => handleShortcutChange('togglePasteWithFormatShortcut', '')} hasError={hasErrorStatus('togglePasteWithFormatShortcut', 'toggle_paste_with_format')} errorMessage={getErrorMessage('togglePasteWithFormatShortcut', 'toggle_paste_with_format')} />

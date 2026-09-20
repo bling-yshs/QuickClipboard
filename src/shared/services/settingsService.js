@@ -70,6 +70,7 @@ export const defaultSettings = {
   togglePinShortcut: 'Ctrl+P',
   toggleClipboardMonitorShortcut: '',
   togglePasteWithFormatShortcut: '',
+  togglePreviewShortcut: '',
   toggleLowMemoryModeShortcut: '',
   pastePlainTextShortcut: '',
   
@@ -78,6 +79,7 @@ export const defaultSettings = {
   ignoreDuplicates: true,
   saveImages: true,
   imagePreview: true,
+  previewEnabled: true,
   textPreview: true,
   filePreview: true,
   settingsMigrationVersion: 1,
@@ -270,4 +272,3 @@ export async function hideMainWindowIfAutoShownService() {
     console.error('隐藏主窗口失败:', error)
   }
 }
-

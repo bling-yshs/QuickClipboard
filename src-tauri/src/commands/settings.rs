@@ -73,6 +73,14 @@ pub fn reload_settings() -> Result<AppSettings, String> {
     Ok(settings)
 }
 
+/// 保存应用设置并同步运行状态。
+///
+/// # Arguments
+/// * `settings` - 待保存的设置。
+/// * `app` - 应用句柄。
+///
+/// # Returns
+/// 保存成功返回空值，失败返回错误信息。
 #[tauri::command]
 pub fn save_settings(mut settings: AppSettings, app: tauri::AppHandle) -> Result<(), String> {
     let old_settings = get_settings();
@@ -122,6 +130,10 @@ pub fn save_settings(mut settings: AppSettings, app: tauri::AppHandle) -> Result
     }
     
     update_settings(settings.clone())?;
+
+    if !settings.preview_enabled {
+        crate::windows::preview_window::force_close_preview_window(&app);
+    }
 
     if remember_window_size_disabled {
         restore_main_window_default_size(&app);
@@ -330,6 +342,28 @@ pub fn toggle_paste_with_format(app: &tauri::AppHandle) -> Result<(), String> {
     result
 }
 
+/// 切换预览总开关，保留各类型预览偏好并广播更新。
+///
+/// # Arguments
+/// * `app` - 应用句柄。
+///
+/// # Returns
+/// 保存成功返回空值，失败返回错误信息。
+pub fn toggle_preview(app: &tauri::AppHandle) -> Result<(), String> {
+    let mut settings = get_settings();
+    settings.preview_enabled = !settings.preview_enabled;
+    let enabled = settings.preview_enabled;
+    save_settings(settings, app.clone())?;
+
+    use tauri::Emitter;
+    let _ = app.emit("settings-changed", serde_json::json!({
+        "previewEnabled": enabled
+    }));
+    let message = if enabled { "预览已启用" } else { "预览已禁用" };
+    let _ = crate::services::notification::show_notification(app, "QuickClipboard", message);
+    Ok(())
+}
+
 // 保存窗口位置
 #[tauri::command]
 pub fn save_window_position(x: i32, y: i32) -> Result<(), String> {
@@ -420,4 +454,3 @@ pub fn set_one_time_paste_enabled(enabled: bool) -> Result<bool, String> {
     crate::services::store::set(ONE_TIME_PASTE_STORE_KEY, &enabled)?;
     Ok(enabled)
 }
-

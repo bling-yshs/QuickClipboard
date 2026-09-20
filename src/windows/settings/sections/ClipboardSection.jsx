@@ -6,6 +6,11 @@ import Select from '@shared/components/ui/Select';
 import Input from '@shared/components/ui/Input';
 import Textarea from '@shared/components/ui/Textarea';
 import MultiSegmentedControl from '@shared/components/ui/MultiSegmentedControl';
+/**
+ * 渲染剪贴板设置及预览总开关。
+ * @param {Object} props 设置数据与变更回调。
+ * @returns {JSX.Element} 剪贴板设置界面。
+ */
 function ClipboardSection({
   settings,
   onSettingChange
@@ -101,6 +106,10 @@ function ClipboardSection({
 
         <SettingItem label={t('settings.clipboard.saveImages')} description={t('settings.clipboard.saveImagesDesc')}>
           <Toggle checked={settings.saveImages} onChange={checked => onSettingChange('saveImages', checked)} />
+        </SettingItem>
+
+        <SettingItem label={t('settings.clipboard.previewEnabled')} description={t('settings.clipboard.previewEnabledDesc')}>
+          <Toggle checked={settings.previewEnabled !== false} onChange={checked => onSettingChange('previewEnabled', checked)} />
         </SettingItem>
 
         <SettingItem label={t('settings.clipboard.previewOptions')} description={t('settings.clipboard.previewOptionsDesc')}>
