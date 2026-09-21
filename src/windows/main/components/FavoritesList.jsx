@@ -19,6 +19,12 @@ const LIST_PRELOAD_PADDING = 20;
 const LIST_VIEWPORT_PADDING = 120;
 const SELECTION_LOAD_PAGE_SIZE = 100;
 
+/**
+ * 渲染收藏列表并处理选择和导航。
+ * @param {Object} props 列表属性。
+ * @param {import('react').ForwardedRef<Object>} ref 列表操作引用。
+ * @returns {JSX.Element} 收藏列表。
+ */
 const FavoritesList = forwardRef(({
   onScrollStateChange
 }, ref) => {
@@ -229,8 +235,15 @@ const FavoritesList = forwardRef(({
     return entries;
   }, [favSnap.contentType, favSnap.filter, groupsSnap.currentGroup]);
 
+  /**
+   * 处理条目点击，多选模式下切换当前条目的选中状态。
+   * @param {Object} item 点击的收藏条目。
+   * @param {number} index 条目索引。
+   * @param {import('react').MouseEvent} event 点击事件。
+   * @returns {Promise<boolean>} 是否已处理选择操作。
+   */
   const handleItemClick = useCallback(async (item, index, event) => {
-    if (settings.modifierClickMultiSelect === false) {
+    if (!favoritesStore.isMultiSelectMode && settings.modifierClickMultiSelect === false) {
       return false;
     }
 
@@ -288,14 +301,7 @@ const FavoritesList = forwardRef(({
       index,
       contentType: item.content_type,
     };
-    if (isCtrlLikePressed) {
-      favoritesStore.toggleSelectedEntry(entry);
-    } else if (favoritesStore.selectedEntries.length === 1 && favoritesStore.hasSelectedId(entry.id)) {
-      favoritesStore.toggleSelectedEntry(entry);
-    } else {
-      // 多选模式下普通单击改为单选当前项，符合常见文件管理器行为。
-      favoritesStore.replaceSelection([entry]);
-    }
+    favoritesStore.toggleSelectedEntry(entry);
     favoritesStore.setSelectionAnchorIndex(index);
     return true;
   }, [currentSelectedIndex, loadSelectionEntries, settings.modifierClickMultiSelect]);

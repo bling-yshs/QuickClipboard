@@ -20,6 +20,12 @@ const LIST_PRELOAD_PADDING = 20;
 const LIST_VIEWPORT_PADDING = 120;
 const SELECTION_LOAD_PAGE_SIZE = 100;
 
+/**
+ * 渲染剪贴板列表并处理选择和导航。
+ * @param {Object} props 列表属性。
+ * @param {import('react').ForwardedRef<Object>} ref 列表操作引用。
+ * @returns {JSX.Element} 剪贴板列表。
+ */
 const ClipboardList = forwardRef(({
   onScrollStateChange
 }, ref) => {
@@ -311,8 +317,15 @@ const ClipboardList = forwardRef(({
     return entries;
   }, [clipSnap.contentType, clipSnap.filter]);
 
+  /**
+   * 处理条目点击，多选模式下切换当前条目的选中状态。
+   * @param {Object} item 点击的剪贴板条目。
+   * @param {number} index 条目索引。
+   * @param {import('react').MouseEvent} event 点击事件。
+   * @returns {Promise<boolean>} 是否已处理选择操作。
+   */
   const handleItemClick = useCallback(async (item, index, event) => {
-    if (settings.modifierClickMultiSelect === false) {
+    if (!clipboardStore.isMultiSelectMode && settings.modifierClickMultiSelect === false) {
       return false;
     }
 
@@ -370,14 +383,7 @@ const ClipboardList = forwardRef(({
       index,
       contentType: item.content_type,
     };
-    if (isCtrlLikePressed) {
-      clipboardStore.toggleSelectedEntry(entry);
-    } else if (clipboardStore.selectedEntries.length === 1 && clipboardStore.hasSelectedId(entry.id)) {
-      clipboardStore.toggleSelectedEntry(entry);
-    } else {
-      // 多选模式下普通单击改为单选当前项，符合常见文件管理器行为。
-      clipboardStore.replaceSelection([entry]);
-    }
+    clipboardStore.toggleSelectedEntry(entry);
     clipboardStore.setSelectionAnchorIndex(index);
     return true;
   }, [currentSelectedIndex, loadSelectionEntries, settings.modifierClickMultiSelect]);

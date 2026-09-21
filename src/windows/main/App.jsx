@@ -206,8 +206,20 @@ function App() {
     favoritesStore.exitMultiSelectMode();
   }, [activeTab]);
   useEffect(() => {
+    /**
+     * 注册主窗口显示、隐藏及操作事件。
+     * @returns {Promise<Function>} 事件监听清理函数。
+     */
     const setupListeners = async () => {
+      /**
+       * 显示窗口时恢复剪贴板普通模式并应用搜索设置。
+       * @returns {Promise<void>} 窗口显示处理完成。
+       */
       const handleWindowShow = async () => {
+        clipboardStore.exitMultiSelectMode();
+        favoritesStore.exitMultiSelectMode();
+        navigationStore.setActiveTab('clipboard');
+        setActiveTab('clipboard');
         try {
           const { saveCurrentFocus } = await import('@shared/api/window');
           await saveCurrentFocus();
