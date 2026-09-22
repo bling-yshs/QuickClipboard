@@ -236,6 +236,7 @@
     "link": "链接"
   },
   "search": {
+    "regex": "正则搜索",
     "placeholder": "搜索剪贴板内容..."
   },
   "settings": {

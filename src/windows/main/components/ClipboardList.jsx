@@ -211,7 +211,7 @@ const ClipboardList = forwardRef(({
     }
     navigationStore.resetNavigation();
     onScrollStateChangeRef.current?.({ atTop: true });
-  }, [clipSnap.filter, clipSnap.contentType, clipSnap.pasteStatus, scrollerElement]);
+  }, [clipSnap.filter, clipSnap.regexSearch, clipSnap.contentType, clipSnap.pasteStatus, scrollerElement]);
 
   const loadMissingRange = useCallback(async (startIndex, endIndex) => {
     if (clipSnap.loading || clipSnap.totalCount <= 0) {
@@ -288,6 +288,12 @@ const ClipboardList = forwardRef(({
     return () => cleanup.then(fn => fn());
   }, []);
 
+  /**
+   * 按当前搜索模式加载范围内的多选条目。
+   * @param {number} startIndex 起始索引。
+   * @param {number} endIndex 结束索引。
+   * @returns {Promise<Array>} 范围内的条目。
+   */
   const loadSelectionEntries = useCallback(async (startIndex, endIndex) => {
     const entries = [];
 
@@ -298,6 +304,7 @@ const ClipboardList = forwardRef(({
         limit,
         contentType: clipSnap.contentType !== 'all' ? clipSnap.contentType : undefined,
         search: clipSnap.filter || undefined,
+        regexSearch: clipSnap.regexSearch,
       });
 
       result.items.forEach((item, itemOffset) => {
@@ -315,7 +322,7 @@ const ClipboardList = forwardRef(({
     }
 
     return entries;
-  }, [clipSnap.contentType, clipSnap.filter]);
+  }, [clipSnap.contentType, clipSnap.filter, clipSnap.regexSearch]);
 
   /**
    * 处理条目点击，多选模式下切换当前条目的选中状态。

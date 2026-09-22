@@ -133,6 +133,8 @@ pub struct QueryParams {
     // 搜索关键词（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search: Option<String>,
+    #[serde(default)]
+    pub regex_search: bool,
     // 内容类型过滤（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content_type: Option<String>,
@@ -140,11 +142,16 @@ pub struct QueryParams {
 }
 
 impl Default for QueryParams {
+    /// 创建普通搜索的默认查询参数。
+    ///
+    /// # Returns
+    /// 返回从首条记录开始的分页查询参数。
     fn default() -> Self {
         Self {
             offset: 0,
             limit: 50,
             search: None,
+            regex_search: false,
             content_type: None,
             paste_status: None,
         }
@@ -164,6 +171,8 @@ pub struct FavoritesQueryParams {
     // 搜索关键词（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search: Option<String>,
+    #[serde(default)]
+    pub regex_search: bool,
     // 内容类型过滤（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content_type: Option<String>,
@@ -171,12 +180,17 @@ pub struct FavoritesQueryParams {
 }
 
 impl Default for FavoritesQueryParams {
+    /// 创建普通搜索的默认查询参数。
+    ///
+    /// # Returns
+    /// 返回从首条记录开始的分页查询参数。
     fn default() -> Self {
         Self {
             offset: 0,
             limit: 50,
             group_name: None,
             search: None,
+            regex_search: false,
             content_type: None,
             paste_status: None,
         }

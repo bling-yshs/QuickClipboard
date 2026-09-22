@@ -22,7 +22,7 @@ tauri-plugin-updater = "2"
 tauri-plugin-process = "2.3.1"
 tauri-plugin-fs = "2"
 tauri-plugin-global-shortcut = "2"
-rusqlite = { version = "0.32", features = ["bundled"] }
+rusqlite = { version = "0.32", features = ["bundled", "functions"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 clipboard-rs = {git="https://github.com/ChurchTao/clipboard-rs", tag="v0.3.2"}

@@ -8,11 +8,32 @@ pub const MAX_CONTENT_LENGTH: usize = 1600;
 static DB_CONNECTION: Lazy<Mutex<Option<Connection>>> = 
     Lazy::new(|| Mutex::new(None));
 
-// 初始化数据库连接
+/// 初始化数据库并注册正则搜索函数。
+///
+/// # Arguments
+/// * `db_path` - SQLite 数据库路径。
+///
+/// # Returns
+/// 返回初始化结果或错误信息。
 pub fn init_database(db_path: &str) -> Result<(), String> {
     let conn = Connection::open(db_path)
         .map_err(|e| format!("打开数据库失败: {}", e))?;
     
+    conn.create_scalar_function(
+        "regexp",
+        2,
+        rusqlite::functions::FunctionFlags::SQLITE_UTF8
+            | rusqlite::functions::FunctionFlags::SQLITE_DETERMINISTIC,
+        |ctx| {
+            let pattern: std::sync::Arc<regex::Regex> = ctx.get_or_create_aux(0, |value| {
+                regex::Regex::new(value.as_str()?)
+                    .map_err(|error| Box::new(error) as Box<dyn std::error::Error + Send + Sync>)
+            })?;
+            let text = ctx.get::<Option<String>>(1)?;
+            Ok(text.as_deref().map(|text| pattern.is_match(text)).unwrap_or(false))
+        },
+    ).map_err(|e| format!("注册正则搜索失败: {}", e))?;
+
     // 创建表结构
     create_tables(&conn)?;
 

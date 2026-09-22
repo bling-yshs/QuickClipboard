@@ -270,11 +270,19 @@ struct PanelPage {
     range_end: i64,
 }
 
+/// 加载低内存面板的普通模式分页记录。
+///
+/// # Arguments
+/// * `page` - 从零开始的页码。
+///
+/// # Returns
+/// 返回面板页面或查询错误。
 fn load_page(page: i64) -> Result<PanelPage, String> {
     let offset = page.max(0) * PANEL_PAGE_SIZE;
     let result = query_clipboard_items(QueryParams {
         offset,
         limit: PANEL_PAGE_SIZE,
+        regex_search: false,
         search: None,
         content_type: None,
         paste_status: None,

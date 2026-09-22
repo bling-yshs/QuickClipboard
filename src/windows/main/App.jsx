@@ -79,6 +79,7 @@ function App() {
   const [contentFilter, setContentFilter] = useState('all');
   const [pasteFilter, setPasteFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [regexSearch, setRegexSearch] = useState(false);
   const [emojiMode, setEmojiMode] = useState('emoji'); // 'emoji' | 'symbols' | 'images'
   const [updateBannerState, setUpdateBannerState] = useState(null);
   const [isSidebarTabsLayout, setIsSidebarTabsLayout] = useState(getIsSidebarTabsLayout);
@@ -216,6 +217,9 @@ function App() {
        * @returns {Promise<void>} 窗口显示处理完成。
        */
       const handleWindowShow = async () => {
+        setRegexSearch(false);
+        clipboardStore.setFilter(settingsStore.autoClearSearch ? '' : clipboardStore.filter, false);
+        favoritesStore.setFilter(settingsStore.autoClearSearch ? '' : favoritesStore.filter, false);
         clipboardStore.exitMultiSelectMode();
         favoritesStore.exitMultiSelectMode();
         navigationStore.setActiveTab('clipboard');
@@ -535,11 +539,11 @@ function App() {
     transition-colors duration-500 ease-in-out
     bg-qc-surface
   `.trim().replace(/\s+/g, ' ');
-  const TitleBarComponent = <TitleBar ref={searchRef} searchQuery={searchQuery} onSearchChange={setSearchQuery} searchPlaceholder={t('search.placeholder')} position={settings.titleBarPosition} activeTab={activeTab} updateBannerState={updateBannerState} compactActions={isCompactTitleBar} />;
+  const TitleBarComponent = <TitleBar ref={searchRef} searchQuery={searchQuery} regexSearch={regexSearch} onSearchChange={setSearchQuery} onRegexSearchChange={setRegexSearch} searchPlaceholder={t('search.placeholder')} position={settings.titleBarPosition} activeTab={activeTab} updateBannerState={updateBannerState} compactActions={isCompactTitleBar} />;
   const TabNavigationComponent = <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} contentFilter={contentFilter} onFilterChange={setContentFilter} pasteFilter={pasteFilter} onPasteFilterChange={setPasteFilter} emojiMode={emojiMode} onEmojiModeChange={setEmojiMode} onGroupChange={handleGroupChange} groupsPopupRef={groupsPopupRef} navigationMode={tabNavigationMode} compactFilters={isCompactFilters} />;
   const ContentComponent = <div ref={contentDragRef} className="main-content-area flex-1 min-h-0 overflow-hidden relative pb-[8px] bg-qc-surface transition-colors duration-500">
-      {activeTab === 'clipboard' && <ClipboardTab ref={clipboardTabRef} contentFilter={contentFilter} pasteFilter={pasteFilter} searchQuery={searchQuery} />}
-      {activeTab === 'favorites' && <FavoritesTab ref={favoritesTabRef} contentFilter={contentFilter} pasteFilter={pasteFilter} searchQuery={searchQuery} />}
+      {activeTab === 'clipboard' && <ClipboardTab ref={clipboardTabRef} contentFilter={contentFilter} pasteFilter={pasteFilter} searchQuery={searchQuery} regexSearch={regexSearch} />}
+      {activeTab === 'favorites' && <FavoritesTab ref={favoritesTabRef} contentFilter={contentFilter} pasteFilter={pasteFilter} searchQuery={searchQuery} regexSearch={regexSearch} />}
       {activeTab === 'emoji' && <Suspense fallback={null}><EmojiTab emojiMode={emojiMode} onEmojiModeChange={setEmojiMode} /></Suspense>}
     </div>;
   const ActionBarComponent = <MultiSelectActionBar activeTab={activeTab} />;

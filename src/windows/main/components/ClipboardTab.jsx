@@ -7,10 +7,17 @@ import ClipboardList from './ClipboardList';
 import FloatingToolbar from './FloatingToolbar';
 
 const SEARCH_DEBOUNCE_DELAY = 200;
+/**
+ * 渲染列表并同步搜索文本、正则模式和筛选条件。
+ * @param {Object} props 列表筛选属性。
+ * @param {Object} ref 列表操作引用。
+ * @returns {JSX.Element} 列表标签页。
+ */
 const ClipboardTab = forwardRef(({
   contentFilter,
   pasteFilter = 'all',
-  searchQuery
+  searchQuery,
+  regexSearch = false
 }, ref) => {
   const snap = useSnapshot(clipboardStore);
   const settings = useSnapshot(settingsStore);
@@ -19,13 +26,19 @@ const ClipboardTab = forwardRef(({
   const prevTotalCountRef = useRef(snap.totalCount);
   const searchDebounceRef = useRef(null);
 
-  const debouncedSearch = useCallback((query, filter) => {
+  /**
+   * 延迟应用搜索文本及正则模式。
+   * @param {string} query 搜索文本。
+   * @param {boolean} useRegex 是否启用正则搜索。
+   * @returns {void}
+   */
+  const debouncedSearch = useCallback((query, useRegex) => {
     if (searchDebounceRef.current) {
       clearTimeout(searchDebounceRef.current);
     }
 
     searchDebounceRef.current = setTimeout(() => {
-      clipboardStore.setFilter(query);
+      clipboardStore.setFilter(query, useRegex);
       refreshClipboardHistory();
     }, query ? SEARCH_DEBOUNCE_DELAY : 0);
   }, []);
@@ -33,14 +46,14 @@ const ClipboardTab = forwardRef(({
   useEffect(() => {
     clipboardStore.setContentType(contentFilter);
     clipboardStore.setPasteStatus(pasteFilter);
-    debouncedSearch(searchQuery, contentFilter);
+    debouncedSearch(searchQuery, regexSearch);
 
     return () => {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
       }
     };
-  }, [searchQuery, contentFilter, pasteFilter, debouncedSearch]);
+  }, [searchQuery, regexSearch, contentFilter, pasteFilter, debouncedSearch]);
 
 
   useEffect(() => {

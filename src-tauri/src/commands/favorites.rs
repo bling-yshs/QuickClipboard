@@ -48,13 +48,26 @@ fn resolve_stored_path(stored_path: &str) -> String {
     crate::services::resolve_stored_path(stored_path)
 }
 
-// 分页查询收藏列表
+/// 按关键词或正则分页查询记录。
+///
+/// # Arguments
+/// * `offset` - 查询偏移量。
+/// * `limit` - 每页记录数。
+/// * `search` - 关键词或完整正则模式。
+/// * `regex_search` - 是否启用正则搜索，默认关闭。
+/// * `content_type` - 内容类型筛选。
+/// * `paste_status` - 粘贴状态筛选。
+/// * `group_name` - 收藏分组筛选。
+///
+/// # Returns
+/// 返回分页记录或查询错误。
 #[tauri::command]
 pub async fn get_favorites_history(
     offset: Option<i64>,
     limit: Option<i64>,
     group_name: Option<String>,
     search: Option<String>,
+    regex_search: Option<bool>,
     content_type: Option<String>,
     paste_status: Option<String>,
 ) -> Result<PaginatedResult<FavoriteItem>, String> {
@@ -64,6 +77,7 @@ pub async fn get_favorites_history(
             limit: limit.unwrap_or(50),
             group_name,
             search,
+            regex_search: regex_search.unwrap_or(false),
             content_type,
             paste_status,
         };

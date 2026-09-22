@@ -203,8 +203,14 @@ const FavoritesList = forwardRef(({
     }
     navigationStore.resetNavigation();
     onScrollStateChangeRef.current?.({ atTop: true });
-  }, [favSnap.filter, favSnap.contentType, favSnap.pasteStatus, groupsSnap.currentGroup, scrollerElement]);
+  }, [favSnap.filter, favSnap.regexSearch, favSnap.contentType, favSnap.pasteStatus, groupsSnap.currentGroup, scrollerElement]);
 
+  /**
+   * 按当前搜索模式加载范围内的多选条目。
+   * @param {number} startIndex 起始索引。
+   * @param {number} endIndex 结束索引。
+   * @returns {Promise<Array>} 范围内的条目。
+   */
   const loadSelectionEntries = useCallback(async (startIndex, endIndex) => {
     const entries = [];
 
@@ -216,6 +222,7 @@ const FavoritesList = forwardRef(({
         groupName: groupsSnap.currentGroup,
         contentType: favSnap.contentType !== 'all' ? favSnap.contentType : undefined,
         search: favSnap.filter || undefined,
+        regexSearch: favSnap.regexSearch,
       });
 
       result.items.forEach((item, itemOffset) => {
@@ -233,7 +240,7 @@ const FavoritesList = forwardRef(({
     }
 
     return entries;
-  }, [favSnap.contentType, favSnap.filter, groupsSnap.currentGroup]);
+  }, [favSnap.contentType, favSnap.filter, favSnap.regexSearch, groupsSnap.currentGroup]);
 
   /**
    * 处理条目点击，多选模式下切换当前条目的选中状态。

@@ -236,6 +236,7 @@
     "link": "Link"
   },
   "search": {
+    "regex": "Regular expression search",
     "placeholder": "Search clipboard..."
   },
   "settings": {

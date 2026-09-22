@@ -63,10 +63,18 @@ const TOAST_CONFIG = {
   size: TOAST_SIZES.EXTRA_SMALL,
   position: TOAST_POSITIONS.BOTTOM_RIGHT,
 };
+/**
+ * 渲染搜索框、正则开关和窗口操作按钮。
+ * @param {Object} props 标题栏属性和搜索状态。
+ * @param {Object} ref 搜索输入框操作引用。
+ * @returns {JSX.Element} 标题栏。
+ */
 const TitleBar = forwardRef(
   (
     {
       searchQuery,
+      regexSearch = false,
+      onRegexSearchChange,
       onSearchChange,
       searchPlaceholder,
       position = "top",
@@ -314,6 +322,14 @@ const TitleBar = forwardRef(
         setWebdavBusy("");
       }
     };
+    /**
+     * 切换本次窗口显示期间的正则搜索模式。
+     * @returns {void}
+     */
+    const handleToggleRegexSearch = () => {
+      onRegexSearchChange(!regexSearch);
+    };
+
     const handleToggleMultiSelect = (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -695,6 +711,19 @@ const TitleBar = forwardRef(
             isVertical={isVertical}
             position={position}
           />
+
+          <Tooltip content={t("search.regex")} placement={tooltipPlacement} asChild>
+            <button
+              type="button"
+              className={`${TITLE_BAR_BUTTON_CLASS} ${regexSearch ? ACTIVE_ICON_BUTTON_CLASS : "hover:bg-qc-hover text-qc-fg-muted"}`}
+              aria-label={t("search.regex")}
+              aria-pressed={regexSearch}
+              disabled={!currentStore}
+              onClick={handleToggleRegexSearch}
+            >
+              <span className="font-mono font-bold" style={TITLE_BAR_ICON_STYLE}>.*</span>
+            </button>
+          </Tooltip>
 
           <div className={actionContainerClass}>
             <Tooltip

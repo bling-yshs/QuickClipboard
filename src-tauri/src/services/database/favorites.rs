@@ -365,7 +365,13 @@ fn upsert_favorite_records(records: &[CloudRecord], ignore_tombstones: bool) -> 
     })
 }
 
-// 分页查询收藏列表
+/// 根据搜索模式和筛选条件分页查询记录。
+///
+/// # Arguments
+/// * `params` - 分页、搜索模式及筛选参数。
+///
+/// # Returns
+/// 返回匹配记录的分页结果或数据库错误。
 pub fn query_favorites(params: FavoritesQueryParams) -> Result<PaginatedResult<FavoriteItem>, String> {
     let search_keyword = params.search.clone();
     
@@ -383,15 +389,23 @@ pub fn query_favorites(params: FavoritesQueryParams) -> Result<PaginatedResult<F
         }
 
         if let Some(ref search_query) = search_keyword {
-            for keyword in search_query.split_whitespace() {
-                where_clauses.push("(title LIKE ? OR content LIKE ? OR html_content LIKE ?)");
-                let search_pattern = format!("%{}%", keyword);
-                count_params.push(Box::new(search_pattern.clone()));
-                count_params.push(Box::new(search_pattern.clone()));
-                count_params.push(Box::new(search_pattern.clone()));
-                query_params.push(Box::new(search_pattern.clone()));
-                query_params.push(Box::new(search_pattern.clone()));
-                query_params.push(Box::new(search_pattern));
+            if params.regex_search && !search_query.is_empty() {
+                where_clauses.push("(title REGEXP ? OR content REGEXP ? OR html_content REGEXP ?)");
+                for _ in 0..3 {
+                    count_params.push(Box::new(search_query.clone()));
+                    query_params.push(Box::new(search_query.clone()));
+                }
+            } else {
+                for keyword in search_query.split_whitespace() {
+                    where_clauses.push("(title LIKE ? OR content LIKE ? OR html_content LIKE ?)");
+                    let search_pattern = format!("%{}%", keyword);
+                    count_params.push(Box::new(search_pattern.clone()));
+                    count_params.push(Box::new(search_pattern.clone()));
+                    count_params.push(Box::new(search_pattern.clone()));
+                    query_params.push(Box::new(search_pattern.clone()));
+                    query_params.push(Box::new(search_pattern.clone()));
+                    query_params.push(Box::new(search_pattern));
+                }
             }
         }
 

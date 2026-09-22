@@ -46,6 +46,7 @@ export const favoritesStore = proxy({
   items: {},
   totalCount: 0,
   filter: '',
+  regexSearch: false,
   contentType: 'all',
   pasteStatus: 'all',
   selectedIds: new Set(),
@@ -251,10 +252,17 @@ export const favoritesStore = proxy({
     return true
   },
   
-  setFilter(value) {
-    if (this.filter !== value) {
+  /**
+   * 更新搜索文本和模式，并清除旧查询缓存。
+   * @param {string} value 搜索文本。
+   * @param {boolean} regexSearch 是否启用正则搜索。
+   * @returns {void}
+   */
+  setFilter(value, regexSearch = this.regexSearch) {
+    if (this.filter !== value || this.regexSearch !== regexSearch) {
       nextFavoritesRequestVersion()
       this.filter = value
+      this.regexSearch = regexSearch
       this.items = {}
       this.loadingRanges = new Set()
       this.exitMultiSelectMode()
@@ -398,6 +406,14 @@ export const favoritesStore = proxy({
 })
 
 // 加载指定范围的数据
+/**
+ * 加载当前搜索模式下指定范围的记录。
+ * @param {number} startIndex 起始索引。
+ * @param {number} endIndex 结束索引。
+ * @param {?string} groupName 收藏分组。
+ * @param {?Object} requestContext 当前请求上下文。
+ * @returns {Promise<void>} 数据加载完成。
+ */
 export async function loadFavoritesRange(startIndex, endIndex, groupName = null, requestContext = null) {
   if (!groupName) {
     const { groupsStore } = await import('./groupsStore')
@@ -446,6 +462,7 @@ export async function loadFavoritesRange(startIndex, endIndex, groupName = null,
       groupName: requestGroupName,
       contentType: requestContentType !== 'all' ? requestContentType : undefined,
       pasteStatus: requestPasteStatus,
+      regexSearch: favoritesStore.regexSearch,
       search: requestFilter || undefined
     })
 
@@ -473,6 +490,11 @@ export async function loadFavoritesRange(startIndex, endIndex, groupName = null,
 }
 
 // 初始化加载
+/**
+ * 初始化当前搜索模式下的列表。
+ * @param {?string} groupName 收藏分组。
+ * @returns {Promise<void>} 列表初始化完成。
+ */
 export async function initFavorites(groupName = null) {
   if (!groupName) {
     const { groupsStore } = await import('./groupsStore')
@@ -499,6 +521,7 @@ export async function initFavorites(groupName = null) {
         groupName: requestGroupName,
         contentType: requestContentType !== 'all' ? requestContentType : undefined,
         pasteStatus: requestPasteStatus,
+        regexSearch: favoritesStore.regexSearch,
         search: requestFilter || undefined
       })
 

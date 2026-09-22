@@ -458,7 +458,13 @@ pub fn register_paste_plain_text_hotkey(shortcut_str: &str) -> Result<(), String
     Ok(())
 }
 
-// 首次按下
+/// 处理纯文本粘贴快捷键的首次按下。
+///
+/// # Arguments
+/// * `app` - 应用句柄。
+///
+/// # Returns
+/// 返回粘贴处理结果或错误。
 fn handle_paste_plain_text_press(app: &AppHandle) -> Result<(), String> {
     use crate::services::database::{query_clipboard_items, get_clipboard_item_by_id, QueryParams};
     use crate::services::paste::paste_handler::paste_clipboard_item_with_format;
@@ -478,6 +484,7 @@ fn handle_paste_plain_text_press(app: &AppHandle) -> Result<(), String> {
         let items = query_clipboard_items(QueryParams {
             offset: 0,
             limit: 1,
+            regex_search: false,
             search: None,
             content_type: None,
             paste_status: None,
@@ -605,7 +612,13 @@ pub fn unregister_number_shortcuts() {
     }
 }
 
-// 首次按下
+/// 按普通查询顺序粘贴数字快捷键对应的记录。
+///
+/// # Arguments
+/// * `index` - 从零开始的记录索引。
+///
+/// # Returns
+/// 返回粘贴处理结果或错误。
 fn handle_number_shortcut_press(index: usize) -> Result<(), String> {
     use crate::services::database::{query_clipboard_items, get_clipboard_item_by_id, QueryParams};
     use crate::services::paste::paste_handler::paste_clipboard_item_with_update;
@@ -624,6 +637,7 @@ fn handle_number_shortcut_press(index: usize) -> Result<(), String> {
     let items = query_clipboard_items(QueryParams {
         offset: 0,
         limit: 9,
+        regex_search: false,
         search: None,
         content_type: None,
         paste_status: None,

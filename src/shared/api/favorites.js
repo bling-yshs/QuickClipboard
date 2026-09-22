@@ -3,10 +3,15 @@ import { restoreLastFocus } from '@shared/api/window'
 import { getOneTimePasteEnabled } from '@shared/services/oneTimePaste'
 
 // 分页查询收藏列表
+/**
+ * 按普通或正则搜索模式获取分页记录。
+ * @param {Object} params 分页及筛选参数，regexSearch 控制正则模式。
+ * @returns {Promise<Object>} 分页查询结果。
+ */
 export async function getFavoritesHistory(params = {}) {
-  const { offset = 0, limit = 50, groupName, search, contentType, pasteStatus } = params
+  const { offset = 0, limit = 50, groupName, search, contentType, pasteStatus, regexSearch = false } = params
 
-  const invokeParams = { offset, limit }
+  const invokeParams = { offset, limit, regexSearch }
   if (groupName && groupName !== '全部') invokeParams.groupName = groupName
   if (search) invokeParams.search = search
   if (contentType) invokeParams.contentType = contentType

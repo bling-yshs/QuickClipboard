@@ -2,11 +2,16 @@ import { invoke } from '@tauri-apps/api/core'
 import { restoreLastFocus } from '@shared/api/window'
 import { getOneTimePasteEnabled } from '@shared/services/oneTimePaste'
 // 获取剪贴板历史列表
+/**
+ * 按普通或正则搜索模式获取分页记录。
+ * @param {Object} params 分页及筛选参数，regexSearch 控制正则模式。
+ * @returns {Promise<Object>} 分页查询结果。
+ */
 export async function getClipboardHistory(params = {}) {
   try {
-    const { offset = 0, limit = 50, search, contentType, pasteStatus } = params
+    const { offset = 0, limit = 50, search, contentType, pasteStatus, regexSearch = false } = params
 
-    const invokeParams = { offset, limit }
+    const invokeParams = { offset, limit, regexSearch }
     if (search) invokeParams.search = search
     if (contentType) invokeParams.contentType = contentType
     if (pasteStatus && pasteStatus !== 'all') invokeParams.pasteStatus = pasteStatus

@@ -9,10 +9,17 @@ import FavoritesList from './FavoritesList';
 import FloatingToolbar from './FloatingToolbar';
 
 const SEARCH_DEBOUNCE_DELAY = 200;
+/**
+ * 渲染列表并同步搜索文本、正则模式和筛选条件。
+ * @param {Object} props 列表筛选属性。
+ * @param {Object} ref 列表操作引用。
+ * @returns {JSX.Element} 列表标签页。
+ */
 const FavoritesTab = forwardRef(({
   contentFilter,
   pasteFilter = 'all',
-  searchQuery
+  searchQuery,
+  regexSearch = false
 }, ref) => {
   const snap = useSnapshot(favoritesStore);
   const settings = useSnapshot(settingsStore);
@@ -21,13 +28,19 @@ const FavoritesTab = forwardRef(({
   const prevTotalCountRef = useRef(snap.totalCount);
   const searchDebounceRef = useRef(null);
 
-  const debouncedSearch = useCallback((query, filter) => {
+  /**
+   * 延迟应用搜索文本及正则模式。
+   * @param {string} query 搜索文本。
+   * @param {boolean} useRegex 是否启用正则搜索。
+   * @returns {void}
+   */
+  const debouncedSearch = useCallback((query, useRegex) => {
     if (searchDebounceRef.current) {
       clearTimeout(searchDebounceRef.current);
     }
     
     searchDebounceRef.current = setTimeout(() => {
-      favoritesStore.setFilter(query);
+      favoritesStore.setFilter(query, useRegex);
       refreshFavorites();
     }, query ? SEARCH_DEBOUNCE_DELAY : 0);
   }, []);
@@ -35,14 +48,14 @@ const FavoritesTab = forwardRef(({
   useEffect(() => {
     favoritesStore.setContentType(contentFilter);
     favoritesStore.setPasteStatus(pasteFilter);
-    debouncedSearch(searchQuery, contentFilter);
+    debouncedSearch(searchQuery, regexSearch);
     
     return () => {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
       }
     };
-  }, [searchQuery, contentFilter, pasteFilter, debouncedSearch]);
+  }, [searchQuery, regexSearch, contentFilter, pasteFilter, debouncedSearch]);
 
   useEffect(() => {
     if (snap.totalCount > prevTotalCountRef.current) {

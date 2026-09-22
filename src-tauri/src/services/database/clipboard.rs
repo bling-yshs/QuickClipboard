@@ -184,10 +184,16 @@ fn delete_image_files(image_ids: Vec<String>) -> Result<(), String> {
     Ok(())
 }
 
-// 分页查询剪贴板历史
+/// 根据搜索模式和筛选条件分页查询记录。
+///
+/// # Arguments
+/// * `params` - 分页、搜索模式及筛选参数。
+///
+/// # Returns
+/// 返回匹配记录的分页结果或数据库错误。
 pub fn query_clipboard_items(params: QueryParams) -> Result<PaginatedResult<ClipboardItem>, String> {
     let search_keyword = params.search.clone();
-    let has_filter = search_keyword.as_ref().map(|s| !s.trim().is_empty()).unwrap_or(false)
+    let has_filter = search_keyword.as_ref().map(|s| !s.is_empty()).unwrap_or(false)
         || params.content_type.as_ref().map(|t| t != "all").unwrap_or(false)
         || params.paste_status.as_ref().map(|s| s.split(',').any(|v| v.trim() == "pasted" || v.trim() == "unpasted")).unwrap_or(false);
     
@@ -196,9 +202,14 @@ pub fn query_clipboard_items(params: QueryParams) -> Result<PaginatedResult<Clip
         let mut query_params: Vec<Box<dyn rusqlite::ToSql>> = vec![];
         
         if let Some(ref search) = search_keyword {
-            for keyword in search.split_whitespace() {
-                where_clauses.push("content LIKE ?");
-                query_params.push(Box::new(format!("%{}%", keyword)));
+            if params.regex_search && !search.is_empty() {
+                where_clauses.push("content REGEXP ?");
+                query_params.push(Box::new(search.clone()));
+            } else {
+                for keyword in search.split_whitespace() {
+                    where_clauses.push("content LIKE ?");
+                    query_params.push(Box::new(format!("%{}%", keyword)));
+                }
             }
         }
         
