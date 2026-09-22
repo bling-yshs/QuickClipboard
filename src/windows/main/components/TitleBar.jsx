@@ -709,7 +709,6 @@ const TitleBar = forwardRef(
             onChange={onSearchChange}
             placeholder={searchPlaceholder}
             isVertical={isVertical}
-            position={position}
           />
 
           <Tooltip content={t("search.regex")} placement={tooltipPlacement} asChild>

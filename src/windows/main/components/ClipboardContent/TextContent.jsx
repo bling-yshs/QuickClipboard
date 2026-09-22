@@ -5,11 +5,16 @@ import { toast, TOAST_POSITIONS, TOAST_SIZES } from '@shared/store/toastStore';
 import Tooltip from '@shared/components/common/Tooltip.jsx';
 import { formatColorCodeLike, parseStandaloneColorCode } from '@shared/utils/colorCode';
 
-// 文本内容组件
+/**
+ * 渲染内容，并根据普通或正则搜索模式高亮匹配片段。
+ * @param {Object} props 内容数据、布局和搜索状态。
+ * @returns {JSX.Element} 内容视图。
+ */
 function TextContent({
   content,
   lineClampClass,
   searchKeyword,
+  regexSearch = false,
   rowHeight = 'medium',
   item,
   source = 'clipboard',
@@ -149,7 +154,7 @@ function TextContent({
   };
 
   const renderedContent = searchKeyword
-    ? highlightText(content, searchKeyword)
+    ? highlightText(content, searchKeyword, regexSearch)
     : content;
 
   const clampClass = rowHeight === 'auto' ? '' : lineClampClass;

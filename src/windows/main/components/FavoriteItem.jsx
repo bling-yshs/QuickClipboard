@@ -81,7 +81,8 @@ function FavoriteItem({
     renderType,
     formatTime,
     renderContent,
-    searchKeyword
+    searchKeyword,
+    regexSearch
   } = useItemCommon(item, { isFavorite: true });
   const { isBackground } = useTheme();
   const isFileType = renderType === 'file';
@@ -619,7 +620,7 @@ function FavoriteItem({
       {isCompactHeight ? <div className="flex items-center gap-2 h-full overflow-hidden">
         {hasTitle ? (
           <p className="flex-1 min-w-0 truncate pr-16 text-sm font-semibold leading-5 text-qc-fg">
-            {searchKeyword ? highlightText(titleText, searchKeyword) : titleText}
+            {searchKeyword ? highlightText(titleText, searchKeyword, regexSearch) : titleText}
           </p>
         ) : (
           <div className="flex-1 min-w-0 overflow-hidden h-full">
@@ -647,7 +648,7 @@ function FavoriteItem({
         {hasTitle && (
           <div className="flex-shrink-0 mb-0">
             <p className="text-sm font-semibold text-qc-fg truncate pr-16 leading-tight">
-              {searchKeyword ? highlightText(titleText, searchKeyword) : titleText}
+              {searchKeyword ? highlightText(titleText, searchKeyword, regexSearch) : titleText}
             </p>
           </div>
         )}

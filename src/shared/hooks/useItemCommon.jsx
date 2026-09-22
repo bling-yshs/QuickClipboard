@@ -59,7 +59,12 @@ function resolveRenderType(contentType, activeFilterType) {
   return primaryType;
 }
 
-// 剪贴板和收藏项的共同逻辑
+/**
+ * 获取剪贴板或收藏项的显示配置及搜索高亮模式。
+ * @param {Object} item 列表记录。
+ * @param {Object} options 记录类型及显示选项。
+ * @returns {Object} 内容渲染方法、显示配置与搜索状态。
+ */
 export function useItemCommon(item, options = {}) {
   const settings = useSnapshot(settingsStore);
   const clipSnap = useSnapshot(clipboardStore);
@@ -67,6 +72,8 @@ export function useItemCommon(item, options = {}) {
   const rowConfig = ROW_HEIGHT_CONFIG[settings.rowHeight] || ROW_HEIGHT_CONFIG.medium;
 
   const searchKeyword = options.searchKeyword ?? ((options.isFavorite ? favSnap.filter : clipSnap.filter) || '');
+
+  const regexSearch = options.regexSearch ?? (options.isFavorite ? favSnap.regexSearch : clipSnap.regexSearch);
 
   // 获取固定行高
   const getHeightClass = () => rowConfig.itemClass;
@@ -135,7 +142,13 @@ export function useItemCommon(item, options = {}) {
     return timeStr;
   };
 
-  // 渲染内容组件
+  /**
+   * 根据内容类型渲染记录，并传递当前搜索高亮模式。
+   * @param {boolean} compact 是否使用紧凑布局。
+   * @param {boolean} hasTitle 是否显示标题。
+   * @param {Object} layout 内容区域布局选项。
+   * @returns {JSX.Element} 内容组件。
+   */
   const renderContent = (compact = false, hasTitle = false, layout = {}) => {
     const disableExternalDrag = Boolean(layout?.disableExternalDrag);
     const disableExternalTooltip = Boolean(layout?.disableExternalTooltip);
@@ -162,7 +175,7 @@ export function useItemCommon(item, options = {}) {
 
     // 文件类型
     if (primaryType === 'file') {
-      return <FileContent item={item} compact={compact} searchKeyword={searchKeyword} maxContentHeightPx={autoRowMaxContentHeightPx} disableExternalDrag={disableExternalDrag} disableExternalTooltip={disableExternalTooltip} />;
+      return <FileContent item={item} compact={compact} searchKeyword={searchKeyword} regexSearch={regexSearch} maxContentHeightPx={autoRowMaxContentHeightPx} disableExternalDrag={disableExternalDrag} disableExternalTooltip={disableExternalTooltip} />;
     }
 
     const displayFormat = searchKeyword
@@ -174,10 +187,10 @@ export function useItemCommon(item, options = {}) {
     }
 
     if (displayFormat === DISPLAY_FORMAT_HTML && item.html_content) {
-      return <HtmlContent htmlContent={item.html_content} lineClampClass={lineClampClass} searchKeyword={searchKeyword} compact={compact} rowHeight={rowHeight} autoRowMaxLines={textLayout.autoRowMaxLines} maxContentHeightPx={autoRowMaxContentHeightPx} />;
+      return <HtmlContent htmlContent={item.html_content} lineClampClass={lineClampClass} searchKeyword={searchKeyword} regexSearch={regexSearch} compact={compact} rowHeight={rowHeight} autoRowMaxLines={textLayout.autoRowMaxLines} maxContentHeightPx={autoRowMaxContentHeightPx} />;
     }
 
-    return <TextContent content={item.content || ''} lineClampClass={lineClampClass} searchKeyword={searchKeyword} compact={compact} rowHeight={rowHeight} item={item} source={options.isFavorite ? 'favorite' : 'clipboard'} {...textLayout} />;
+    return <TextContent content={item.content || ''} lineClampClass={lineClampClass} searchKeyword={searchKeyword} regexSearch={regexSearch} compact={compact} rowHeight={rowHeight} item={item} source={options.isFavorite ? 'favorite' : 'clipboard'} {...textLayout} />;
   };
   return {
     settings,
@@ -187,6 +200,7 @@ export function useItemCommon(item, options = {}) {
     renderType,
     formatTime,
     renderContent,
-    searchKeyword
+    searchKeyword,
+    regexSearch
   };
 }

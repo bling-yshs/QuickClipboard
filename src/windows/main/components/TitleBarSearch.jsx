@@ -1,24 +1,20 @@
-import '@tabler/icons-webfont/dist/tabler-icons.min.css';
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useInputFocus, focusWindowImmediately } from '@shared/hooks/useInputFocus';
-import { useSnapshot } from 'valtio';
-import { settingsStore } from '@shared/store/settingsStore';
-import Tooltip from '@shared/components/common/Tooltip.jsx';
+/**
+ * 渲染常驻搜索输入框，支持输入法和快捷键聚焦。
+ * @param {Object} props 搜索值、输入回调与布局方向。
+ * @param {import('react').ForwardedRef<Object>} ref 搜索框操作引用。
+ * @returns {JSX.Element} 搜索输入框。
+ */
 const TitleBarSearch = forwardRef(({
   value,
   onChange,
   placeholder,
-  isVertical = false,
-  position = 'top'
+  isVertical = false
 }, ref) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [inputValue, setInputValue] = useState(value || '');
   const inputRef = useInputFocus();
-  const searchRef = useRef(null);
   const isComposingRef = useRef(false);
-  const settings = useSnapshot(settingsStore);
-  const uiAnimationEnabled = settings.uiAnimationEnabled !== false;
 
   // 搜索框清空按钮样式
   const searchInputStyle = `
@@ -38,31 +34,29 @@ const TitleBarSearch = forwardRef(({
         }
     `;
 
-  // 决定是否显示为扩展状态
+  // 同步外部搜索内容
   useEffect(() => {
     if (!isComposingRef.current) {
       setInputValue(value || '');
     }
   }, [value]);
 
-  const shouldExpand = isFocused || inputValue.length > 0;
-  useEffect(() => {
-    setIsExpanded(shouldExpand);
-  }, [shouldExpand]);
-  const handleIconClick = () => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  };
+  /**
+   * 聚焦后选中现有搜索文本。
+   * @returns {void}
+   */
   const handleFocus = () => {
-    setIsFocused(true);
     if (inputRef.current && inputValue) {
       setTimeout(() => {
         inputRef.current.select();
       }, 100);
     }
   };
+  /**
+   * 同步输入内容，并在输入法组合结束后提交搜索。
+   * @param {import('react').ChangeEvent<HTMLInputElement>} e 输入事件。
+   * @returns {void}
+   */
   const handleChange = e => {
     const nextValue = e.target.value;
     setInputValue(nextValue);
@@ -73,9 +67,18 @@ const TitleBarSearch = forwardRef(({
 
     onChange(nextValue);
   };
+  /**
+   * 标记输入法开始组合文本。
+   * @returns {void}
+   */
   const handleCompositionStart = () => {
     isComposingRef.current = true;
   };
+  /**
+   * 在输入法组合结束时提交搜索文本。
+   * @param {import('react').CompositionEvent<HTMLInputElement>} e 输入法事件。
+   * @returns {void}
+   */
   const handleCompositionEnd = e => {
     const nextValue = e.currentTarget.value;
     isComposingRef.current = false;
@@ -85,6 +88,10 @@ const TitleBarSearch = forwardRef(({
 
   // 暴露方法给父组件
   useImperativeHandle(ref, () => ({
+    /**
+     * 激活窗口并聚焦搜索框。
+     * @returns {Promise<void>} 聚焦完成。
+     */
     focus: async () => {
       if (inputRef.current) {
         try {
@@ -96,9 +103,17 @@ const TitleBarSearch = forwardRef(({
         }
       }
     },
+    /**
+     * 移除输入焦点，保持搜索框可见。
+     * @returns {void}
+     */
     blur: () => {
       inputRef.current?.blur();
     },
+    /**
+     * 切换输入焦点，保持搜索框可见。
+     * @returns {Promise<void>} 焦点切换完成。
+     */
     toggleFocus: async () => {
       if (document.activeElement === inputRef.current) {
         inputRef.current.blur();
@@ -115,27 +130,30 @@ const TitleBarSearch = forwardRef(({
         }
       }
     },
+    /**
+     * 查询搜索框是否持有输入焦点。
+     * @returns {boolean} 是否已聚焦。
+     */
     isFocused: () => document.activeElement === inputRef.current
   }));
   return <>
-            <style>{searchInputStyle}</style>
-            <div ref={searchRef} className={`titlebar-search relative flex ${isVertical ? 'flex-col items-center justify-end h-7' : 'min-w-0 flex-1 flex-row items-center justify-end'}`}>
-                {/* 输入框 - 根据方向展开 */}
-                <input ref={inputRef} type="search" value={inputValue} onChange={handleChange} onCompositionStart={handleCompositionStart} onCompositionEnd={handleCompositionEnd} onFocus={handleFocus} onBlur={() => setIsFocused(false)} placeholder={placeholder} style={isVertical ? {
-        writingMode: 'vertical-rl',
-        textAlign: 'start'
-      } : {}} className={`${isVertical ? 'absolute bottom-6 left-0 w-7 py-2' : 'h-7 min-w-0'} text-sm bg-qc-panel border border-qc-border rounded-lg outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-qc-fg placeholder:text-qc-fg-subtle shadow-sm ${uiAnimationEnabled ? 'transition-all duration-300 ease-in-out' : ''} ${isExpanded ? isVertical ? 'h-48 opacity-100 mb-1' : 'flex-1 opacity-100 mr-1 px-2' : isVertical ? 'h-0 opacity-0 pointer-events-none border-0' : 'w-0 flex-none opacity-0 pointer-events-none border-0 px-0'}`} />
-
-                {/* 搜索图标 - 始终保持在原位 */}
-                <Tooltip content="搜索" placement={isVertical ? (position === 'left' ? 'right' : 'left') : 'bottom'} asChild>
-                  <button onClick={handleIconClick} className={`relative z-10 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-qc-hover text-qc-fg-muted hover:text-blue-500 ${uiAnimationEnabled ? 'transition-all duration-200' : ''}`}>
-                      <i className="ti ti-search" style={{
-            fontSize: 16
-          }}></i>
-                  </button>
-                </Tooltip>
-            </div>
-        </>;
+    <style>{searchInputStyle}</style>
+    <div className={`titlebar-search min-w-0 flex ${isVertical ? 'w-7 h-48 flex-shrink-0' : 'flex-1'}`}>
+      <input
+        ref={inputRef}
+        type="search"
+        value={inputValue}
+        onChange={handleChange}
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={handleCompositionEnd}
+        onFocus={handleFocus}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        style={isVertical ? { writingMode: 'vertical-rl', textAlign: 'start' } : undefined}
+        className={`${isVertical ? 'w-7 h-full py-2' : 'h-7 w-full px-2'} min-w-0 text-sm bg-qc-panel border border-qc-border rounded-lg outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-qc-fg placeholder:text-qc-fg-subtle shadow-sm`}
+      />
+    </div>
+  </>;
 });
 TitleBarSearch.displayName = 'TitleBarSearch';
 export default TitleBarSearch;

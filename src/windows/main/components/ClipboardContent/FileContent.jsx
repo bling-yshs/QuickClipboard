@@ -41,10 +41,16 @@ function FileIcon({
   }} />;
 }
 
+/**
+ * 渲染内容，并根据普通或正则搜索模式高亮匹配片段。
+ * @param {Object} props 内容数据、布局和搜索状态。
+ * @returns {JSX.Element} 内容视图。
+ */
 function FileContent({
   item,
   compact = false,
   searchKeyword,
+  regexSearch = false,
   maxContentHeightPx
 }) {
   const { t } = useTranslation();
@@ -58,12 +64,22 @@ function FileContent({
     ? { maxHeight: `${autoMaxHeight}px` }
     : undefined;
   
+  /**
+   * 渲染文件名称的搜索高亮。
+   * @param {string} name 显示文本。
+   * @returns {import('react').ReactNode} 高亮后的文本。
+   */
   const renderFileName = (name) => {
-    return searchKeyword ? highlightText(name, searchKeyword) : name;
+    return searchKeyword ? highlightText(name, searchKeyword, regexSearch) : name;
   };
   
+  /**
+   * 渲染文件路径的搜索高亮。
+   * @param {string} path 显示文本。
+   * @returns {import('react').ReactNode} 高亮后的文本。
+   */
   const renderFilePath = (path) => {
-    return searchKeyword ? highlightText(path, searchKeyword) : path;
+    return searchKeyword ? highlightText(path, searchKeyword, regexSearch) : path;
   };
 
   let filesData = null;

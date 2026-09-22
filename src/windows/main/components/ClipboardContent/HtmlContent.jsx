@@ -7,19 +7,22 @@ import { highlightHtmlContent, clearHighlights, scrollToFirstHighlight } from '@
 const PLACEHOLDER_SRC = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YwZjBmMCIvPjwvc3ZnPg==';
 const ERROR_SRC = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2ZmZWJlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjEyIiBmaWxsPSIjYzYyODI4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+5Zu+54mH5Yqg6L295aSx6LSlPC90ZXh0Pjwvc3ZnPg==';
 
-// HTML 富文本内容组件
+/**
+ * 渲染内容，并根据普通或正则搜索模式高亮匹配片段。
+ * @param {Object} props 内容数据、布局和搜索状态。
+ * @returns {JSX.Element} 内容视图。
+ */
 function HtmlContent({
   htmlContent,
   lineClampClass,
   searchKeyword,
+  regexSearch = false,
   rowHeight = 'medium',
   autoRowMaxLines = 18,
   maxContentHeightPx
 }) {
   const contentRef = useRef(null);
   const processedRef = useRef(null);
-  const hasScrolledRef = useRef(false);
-  const prevKeywordRef = useRef('');
 
   useEffect(() => {
     if (!contentRef.current || processedRef.current === htmlContent) return;
@@ -69,26 +72,14 @@ function HtmlContent({
   useEffect(() => {
     if (!contentRef.current) return;
 
-    if (searchKeyword !== prevKeywordRef.current) {
-      hasScrolledRef.current = false;
-      prevKeywordRef.current = searchKeyword;
-    }
-    
     if (searchKeyword) {
-      clearHighlights(contentRef.current);
-      highlightHtmlContent(contentRef.current, searchKeyword);
-
-      if (!hasScrolledRef.current) {
-        requestAnimationFrame(() => {
-          if (scrollToFirstHighlight(contentRef.current)) {
-            hasScrolledRef.current = true;
-          }
-        });
-      }
+      highlightHtmlContent(contentRef.current, searchKeyword, regexSearch);
+      const frame = requestAnimationFrame(() => scrollToFirstHighlight(contentRef.current));
+      return () => cancelAnimationFrame(frame);
     } else {
       clearHighlights(contentRef.current);
     }
-  }, [searchKeyword, htmlContent]);
+  }, [searchKeyword, regexSearch, htmlContent]);
 
   const clampClass = searchKeyword || rowHeight === 'auto' ? '' : lineClampClass;
   const autoClampStyle = !searchKeyword && rowHeight === 'auto'

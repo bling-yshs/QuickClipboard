@@ -1,96 +1,108 @@
-// 高亮文本关键词
-export function highlightText(text, keyword) {
+/**
+ * 高亮普通关键词或正则实际匹配的文本。
+ * @param {string} text 待显示的文本。
+ * @param {string} keyword 搜索关键词或正则模式。
+ * @param {boolean} regexSearch 是否按正则匹配。
+ * @returns {string|Array<import('react').ReactNode>} 包含高亮标记的文本。
+ */
+export function highlightText(text, keyword, regexSearch = false) {
   if (!keyword || !text) return text;
 
-  const { regex, keywordSet } = createKeywordMatcher(keyword);
+  const regex = createSearchMatcher(keyword, regexSearch);
   if (!regex) return text;
 
-  const parts = text.split(regex);
-  if (parts.length === 1) return text;
+  const parts = [];
+  let offset = 0;
+  for (const match of text.matchAll(regex)) {
+    if (!match[0].length) continue;
+    parts.push(text.slice(offset, match.index));
+    parts.push(
+      <mark
+        key={match.index}
+        className="search-highlight bg-[var(--qc-search-highlight-bg)] text-[var(--qc-search-highlight-fg)] rounded-sm px-0.5"
+        data-highlight="true"
+      >
+        {match[0]}
+      </mark>
+    );
+    offset = match.index + match[0].length;
+  }
+  if (!parts.length) return text;
+  parts.push(text.slice(offset));
+  return parts;
+}
 
-  return parts.map((part, index) => {
-    if (keywordSet.has(part.toLowerCase())) {
-      return (
-        <mark
-          key={index}
-          className="search-highlight bg-[var(--qc-search-highlight-bg)] text-[var(--qc-search-highlight-fg)] rounded-sm px-0.5"
-          data-highlight="true"
-        >
-          {part}
-        </mark>
-      );
+/**
+ * 创建供文本和 HTML 高亮共用的搜索表达式。
+ * @param {string} keyword 搜索文本。
+ * @param {boolean} regexSearch 是否使用正则模式。
+ * @returns {RegExp|null} 匹配表达式，空输入或无效模式返回 null。
+ */
+function createSearchMatcher(keyword, regexSearch) {
+  if (regexSearch) {
+    let pattern = keyword;
+    let flags = 'gu';
+    const inlineFlags = pattern.match(/^\(\?([ims]+)\)/);
+    if (inlineFlags) {
+      flags += [...new Set(inlineFlags[1])].join('');
+      pattern = pattern.slice(inlineFlags[0].length);
     }
-    return part;
-  });
-}
-
-// 转义正则表达式特殊字符
-function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, (match) => '\\' + match);
-}
-
-function createKeywordMatcher(keyword) {
-  const keywords = keyword.trim().split(/\s+/).filter(Boolean);
-  if (keywords.length === 0) {
-    return { regex: null, keywordSet: new Set() };
+    try {
+      return new RegExp(pattern, flags);
+    } catch {
+      return null;
+    }
   }
 
-  const uniqueKeywords = [...new Set(keywords.map((item) => item.toLowerCase()))];
-  const escapedKeywords = [...uniqueKeywords]
+  const keywords = keyword.trim().split(/\s+/).filter(Boolean);
+  if (!keywords.length) return null;
+  const escapedKeywords = [...new Set(keywords.map((item) => item.toLowerCase()))]
     .sort((a, b) => b.length - a.length)
-    .map(escapeRegExp);
-
-  return {
-    regex: new RegExp(`(${escapedKeywords.join('|')})`, 'gi'),
-    keywordSet: new Set(uniqueKeywords)
-  };
+    .map((item) => item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  return new RegExp(escapedKeywords.join('|'), 'gi');
 }
 
-// 高亮 HTML 内容中的关键词
-export function highlightHtmlContent(container, keyword) {
-  if (!container || !keyword) return;
-
+/**
+ * 在 HTML 文本节点中标记搜索匹配片段。
+ * @param {HTMLElement} container 富文本容器。
+ * @param {string} keyword 搜索关键词或正则模式。
+ * @param {boolean} regexSearch 是否使用正则匹配。
+ * @returns {void}
+ */
+export function highlightHtmlContent(container, keyword, regexSearch = false) {
+  if (!container) return;
   clearHighlights(container);
+  if (!keyword) return;
 
-  const { regex, keywordSet } = createKeywordMatcher(keyword);
+  const regex = createSearchMatcher(keyword, regexSearch);
   if (!regex) return;
-
-  const walker = document.createTreeWalker(
-    container,
-    NodeFilter.SHOW_TEXT,
-    null,
-    false
-  );
-
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
   const textNodes = [];
   let node;
   while ((node = walker.nextNode())) {
-    if (node.nodeValue.match(regex)) {
-      textNodes.push(node);
-    }
+    textNodes.push(node);
   }
 
-  textNodes.forEach((textNode) => {
+  for (const textNode of textNodes) {
     const text = textNode.nodeValue;
-    const parts = text.split(regex);
-
-    if (parts.length > 1) {
-      const fragment = document.createDocumentFragment();
-      parts.forEach((part) => {
-        if (keywordSet.has(part.toLowerCase())) {
-          const mark = document.createElement('mark');
-          mark.className =
-            'search-highlight bg-[var(--qc-search-highlight-bg)] text-[var(--qc-search-highlight-fg)] rounded-sm px-0.5';
-          mark.setAttribute('data-highlight', 'true');
-          mark.textContent = part;
-          fragment.appendChild(mark);
-        } else if (part) {
-          fragment.appendChild(document.createTextNode(part));
-        }
-      });
+    const fragment = document.createDocumentFragment();
+    let offset = 0;
+    for (const match of text.matchAll(regex)) {
+      if (!match[0].length) continue;
+      fragment.appendChild(document.createTextNode(text.slice(offset, match.index)));
+      const mark = document.createElement('mark');
+      mark.className =
+        'search-highlight bg-[var(--qc-search-highlight-bg)] text-[var(--qc-search-highlight-fg)] rounded-sm px-0.5';
+      mark.setAttribute('data-highlight', 'true');
+      mark.textContent = match[0];
+      fragment.appendChild(mark);
+      offset = match.index + match[0].length;
+    }
+    if (offset > 0) {
+      fragment.appendChild(document.createTextNode(text.slice(offset)));
       textNode.parentNode.replaceChild(fragment, textNode);
     }
-  });
+  }
 }
 
 // 清除容器中的高亮
