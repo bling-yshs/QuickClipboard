@@ -438,7 +438,15 @@ function App() {
       favoritesTabRef.current.executeCurrentItem();
     }
   };
+  /**
+   * 切换到上一个主标签页。
+   * @returns {void}
+   */
   const handleTabLeft = () => {
+    if (searchRef.current?.isFocused?.()) {
+      return;
+    }
+
     setActiveTab(currentTab => {
       const tabs = visibleTabs;
       const currentIndex = tabs.indexOf(currentTab);
@@ -446,7 +454,16 @@ function App() {
       return tabs[currentIndex === 0 ? tabs.length - 1 : currentIndex - 1];
     });
   };
+
+  /**
+   * 切换到下一个主标签页。
+   * @returns {void}
+   */
   const handleTabRight = () => {
+    if (searchRef.current?.isFocused?.()) {
+      return;
+    }
+
     setActiveTab(currentTab => {
       const tabs = visibleTabs;
       const currentIndex = tabs.indexOf(currentTab);
